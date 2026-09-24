@@ -80,3 +80,9 @@ def extraer_datos(textos):
     }
 
     return datos
+
+def procesar_documento(ruta_documento):
+    textos = leer_documento(ruta_documento)
+    datos = extraer_datos(textos)
+
+    return datos
