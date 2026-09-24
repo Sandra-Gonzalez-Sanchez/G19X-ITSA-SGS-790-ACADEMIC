@@ -70,6 +70,38 @@ def analizar_curp(textos):
         "estado_formato_curp": "NO DETECTADA"
     }
 
+def extraer_fecha_desde_curp(curp):
+    if not curp or len(curp) != 18:
+        return None
+
+    anio_corto = curp[4:6]
+    mes = curp[6:8]
+    dia = curp[8:10]
+    caracter_siglo = curp[16]
+
+    if caracter_siglo.isdigit():
+        anio = "19" + anio_corto
+    elif caracter_siglo.isalpha():
+        anio = "20" + anio_corto
+    else:
+        return None
+
+    return f"{dia}/{mes}/{anio}"
+
+def comparar_fecha_con_curp(fecha_nacimiento, curp):
+    if not fecha_nacimiento or not curp:
+        return "NO SE PUEDE COMPARAR"
+
+    fecha_curp = extraer_fecha_desde_curp(curp)
+
+    if not fecha_curp:
+        return "NO SE PUEDE COMPARAR"
+
+    if fecha_nacimiento == fecha_curp:
+        return "COINCIDE"
+
+    return "NO COINCIDE"
+
 def extraer_rfc(textos):
     patron_rfc = r"\b[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}\b"
 
@@ -109,14 +141,21 @@ def extraer_fecha_nacimiento(textos):
 
 def extraer_datos(textos):
     analisis_curp = analizar_curp(textos)
+    fecha_nacimiento = extraer_fecha_nacimiento(textos)
+
+    comparacion_fecha = comparar_fecha_con_curp(
+        fecha_nacimiento,
+        analisis_curp["curp"]
+    )
 
     datos = {
         "nombre": extraer_nombre(textos),
-        "fecha_nacimiento": extraer_fecha_nacimiento(textos),
+        "fecha_nacimiento": fecha_nacimiento,
         "curp": analisis_curp["curp"],
         "curp_candidata": analisis_curp["curp_candidata"],
         "estado_formato_curp": analisis_curp["estado_formato_curp"],
-        "rfc": extraer_rfc(textos)
+        "rfc": extraer_rfc(textos),
+        "comparacion_fecha_curp": comparacion_fecha
     }
 
     return datos
