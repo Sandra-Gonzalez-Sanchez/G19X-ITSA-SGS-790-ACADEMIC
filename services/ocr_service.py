@@ -113,6 +113,59 @@ def extraer_rfc(textos):
 
     return None
 
+def analizar_rfc(textos):
+    rfc = extraer_rfc(textos)
+
+    if rfc:
+        return {
+            "rfc": rfc,
+            "estado_formato_rfc": "FORMATO VÁLIDO"
+        }
+
+    return {
+        "rfc": None,
+        "estado_formato_rfc": "NO DETECTADO"
+    }
+
+def extraer_fecha_desde_rfc(rfc):
+    if not rfc or len(rfc) != 13:
+        return None
+
+    anio = rfc[4:6]
+    mes = rfc[6:8]
+    dia = rfc[8:10]
+
+    return {
+        "anio": anio,
+        "mes": mes,
+        "dia": dia
+    }
+
+def comparar_fecha_con_rfc(fecha_nacimiento, rfc):
+    if not fecha_nacimiento or not rfc:
+        return "NO SE PUEDE COMPARAR"
+
+    fecha_rfc = extraer_fecha_desde_rfc(rfc)
+
+    if not fecha_rfc:
+        return "NO SE PUEDE COMPARAR"
+
+    partes_fecha = fecha_nacimiento.split("/")
+
+    if len(partes_fecha) != 3:
+        return "NO SE PUEDE COMPARAR"
+
+    dia, mes, anio = partes_fecha
+
+    if (
+        dia == fecha_rfc["dia"]
+        and mes == fecha_rfc["mes"]
+        and anio[-2:] == fecha_rfc["anio"]
+    ):
+        return "COINCIDE"
+
+    return "NO COINCIDE"
+
 def extraer_nombre(textos):
     etiquetas_nombre = ["NOMBRE:", "NOMBRE COMPLETO:"]
 
@@ -141,11 +194,17 @@ def extraer_fecha_nacimiento(textos):
 
 def extraer_datos(textos):
     analisis_curp = analizar_curp(textos)
+    analisis_rfc = analizar_rfc(textos)
     fecha_nacimiento = extraer_fecha_nacimiento(textos)
 
-    comparacion_fecha = comparar_fecha_con_curp(
+    comparacion_fecha_curp = comparar_fecha_con_curp(
         fecha_nacimiento,
         analisis_curp["curp"]
+    )
+
+    comparacion_fecha_rfc = comparar_fecha_con_rfc(
+        fecha_nacimiento,
+        analisis_rfc["rfc"]
     )
 
     datos = {
@@ -154,8 +213,10 @@ def extraer_datos(textos):
         "curp": analisis_curp["curp"],
         "curp_candidata": analisis_curp["curp_candidata"],
         "estado_formato_curp": analisis_curp["estado_formato_curp"],
-        "rfc": extraer_rfc(textos),
-        "comparacion_fecha_curp": comparacion_fecha
+        "rfc": analisis_rfc["rfc"],
+        "estado_formato_rfc": analisis_rfc["estado_formato_rfc"],
+        "comparacion_fecha_curp": comparacion_fecha_curp,
+        "comparacion_fecha_rfc": comparacion_fecha_rfc
     }
 
     return datos
