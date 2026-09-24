@@ -34,6 +34,42 @@ def extraer_curp(textos):
 
     return None
 
+def extraer_curp_candidata(textos):
+    patron_candidato = r"\b[A-Z]{4}\d{6}[A-Z0-9]{8,9}\b"
+
+    for texto in textos:
+        coincidencia = re.search(patron_candidato, texto.upper())
+
+        if coincidencia:
+            return coincidencia.group()
+
+    return None
+
+def analizar_curp(textos):
+    curp = extraer_curp(textos)
+
+    if curp:
+        return {
+            "curp": curp,
+            "curp_candidata": None,
+            "estado_formato_curp": "FORMATO VÁLIDO"
+        }
+
+    curp_candidata = extraer_curp_candidata(textos)
+
+    if curp_candidata:
+        return {
+            "curp": None,
+            "curp_candidata": curp_candidata,
+            "estado_formato_curp": "REQUIERE REVISIÓN"
+        }
+
+    return {
+        "curp": None,
+        "curp_candidata": None,
+        "estado_formato_curp": "NO DETECTADA"
+    }
+
 def extraer_rfc(textos):
     patron_rfc = r"\b[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}\b"
 
@@ -72,10 +108,14 @@ def extraer_fecha_nacimiento(textos):
     return None
 
 def extraer_datos(textos):
+    analisis_curp = analizar_curp(textos)
+
     datos = {
         "nombre": extraer_nombre(textos),
         "fecha_nacimiento": extraer_fecha_nacimiento(textos),
-        "curp": extraer_curp(textos),
+        "curp": analisis_curp["curp"],
+        "curp_candidata": analisis_curp["curp_candidata"],
+        "estado_formato_curp": analisis_curp["estado_formato_curp"],
         "rfc": extraer_rfc(textos)
     }
 
