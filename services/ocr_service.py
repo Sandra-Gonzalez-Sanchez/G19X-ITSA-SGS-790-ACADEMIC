@@ -304,3 +304,25 @@ def comparar_documentos(datos_documento_1, datos_documento_2):
     }
 
     return resultado
+
+def obtener_resultado_general(comparaciones):
+    if "NO COINCIDE" in comparaciones.values():
+        return "REQUIERE REVISIÓN"
+
+    if "NO SE PUEDE COMPARAR" in comparaciones.values():
+        return "REQUIERE REVISIÓN"
+
+    return "SIN INCONSISTENCIAS"
+
+def validar_documentos(datos_documento_1, datos_documento_2):
+    comparaciones = comparar_documentos(
+        datos_documento_1,
+        datos_documento_2
+    )
+
+    resultado_general = obtener_resultado_general(comparaciones)
+
+    return {
+        "comparaciones": comparaciones,
+        "resultado_general": resultado_general
+    }
