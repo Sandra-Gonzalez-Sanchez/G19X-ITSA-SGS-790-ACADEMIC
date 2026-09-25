@@ -1,5 +1,6 @@
 import os
 import re
+import unicodedata
 
 os.environ["FLAGS_enable_pir_api"] = "0"
 
@@ -226,3 +227,31 @@ def procesar_documento(ruta_documento):
     datos = extraer_datos(textos)
 
     return datos
+
+def normalizar_nombre(nombre):
+    if not nombre:
+        return None
+
+    nombre = nombre.strip().upper()
+
+    nombre = unicodedata.normalize("NFD", nombre)
+    nombre = "".join(
+        caracter for caracter in nombre
+        if unicodedata.category(caracter) != "Mn"
+    )
+
+    nombre = " ".join(nombre.split())
+
+    return nombre
+
+def comparar_nombres(nombre_1, nombre_2):
+    if not nombre_1 or not nombre_2:
+        return "NO SE PUEDE COMPARAR"
+
+    nombre_1_normalizado = normalizar_nombre(nombre_1)
+    nombre_2_normalizado = normalizar_nombre(nombre_2)
+
+    if nombre_1_normalizado == nombre_2_normalizado:
+        return "COINCIDE"
+
+    return "NO COINCIDE"
