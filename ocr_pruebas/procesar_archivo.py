@@ -1,0 +1,29 @@
+import sys
+import json
+import os
+
+ruta_proyecto = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
+
+sys.path.append(ruta_proyecto)
+
+from services.ocr_service import procesar_documento
+
+
+if len(sys.argv) < 2:
+    print(json.dumps({
+        "error": "No se proporcionó la ruta del documento"
+    }))
+    sys.exit(1)
+
+ruta_documento = sys.argv[1]
+
+datos = procesar_documento(ruta_documento)
+
+print(
+    "RESULTADO_OCR:" + json.dumps(
+        datos,
+        ensure_ascii=False
+    )
+)

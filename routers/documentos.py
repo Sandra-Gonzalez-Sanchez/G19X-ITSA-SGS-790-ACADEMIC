@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from database.database import get_db
 from models.empleado import Empleado
 from models.documento import Documento
+from models.dato_extraido import DatoExtraido
 from services.seguridad import verificar_empleado
+from services.ocr_bridge import ejecutar_ocr
 
 
 router = APIRouter(
@@ -94,6 +96,8 @@ def subir_documento(
         db.commit()
         db.refresh(documento_existente)
 
+        documento = documento_existente
+
     else:
         nuevo_documento = Documento(
             empleado_id=empleado.id,
@@ -105,6 +109,49 @@ def subir_documento(
         db.add(nuevo_documento)
         db.commit()
         db.refresh(nuevo_documento)
+        documento = nuevo_documento
+
+    datos_ocr = ejecutar_ocr(ruta_archivo)
+    dato_extraido_existente = db.query(DatoExtraido).filter(
+        DatoExtraido.documento_id == documento.id
+    ).first()
+
+    if not dato_extraido_existente:
+        nuevo_dato_extraido = DatoExtraido(
+            documento_id=documento.id,
+            nombre=datos_ocr.get("nombre"),
+            fecha_nacimiento=datos_ocr.get("fecha_nacimiento"),
+            curp=datos_ocr.get("curp"),
+            curp_candidata=datos_ocr.get("curp_candidata"),
+            estado_formato_curp=datos_ocr.get("estado_formato_curp"),
+            rfc=datos_ocr.get("rfc"),
+            estado_formato_rfc=datos_ocr.get("estado_formato_rfc"),
+            comparacion_fecha_curp=datos_ocr.get("comparacion_fecha_curp"),
+            comparacion_fecha_rfc=datos_ocr.get("comparacion_fecha_rfc")
+        )
+
+        db.add(nuevo_dato_extraido)
+        db.commit()
+        db.refresh(nuevo_dato_extraido)
+
+    else:
+        dato_extraido_existente.nombre = datos_ocr.get("nombre")
+        dato_extraido_existente.fecha_nacimiento = datos_ocr.get("fecha_nacimiento")
+        dato_extraido_existente.curp = datos_ocr.get("curp")
+        dato_extraido_existente.curp_candidata = datos_ocr.get("curp_candidata")
+        dato_extraido_existente.estado_formato_curp = datos_ocr.get("estado_formato_curp")
+        dato_extraido_existente.rfc = datos_ocr.get("rfc")
+        dato_extraido_existente.estado_formato_rfc = datos_ocr.get("estado_formato_rfc")
+        dato_extraido_existente.comparacion_fecha_curp = datos_ocr.get("comparacion_fecha_curp")
+        dato_extraido_existente.comparacion_fecha_rfc = datos_ocr.get("comparacion_fecha_rfc")
+
+        db.commit()
+        db.refresh(dato_extraido_existente)
+
+
+    print("RESULTADO OCR DESDE FASTAPI:")
+    print(datos_ocr)
+    print("DOCUMENTO ID:", documento.id)
 
     return {
         "mensaje": "Documento guardado correctamente",
