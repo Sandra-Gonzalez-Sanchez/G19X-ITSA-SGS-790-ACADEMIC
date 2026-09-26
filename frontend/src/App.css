@@ -228,3 +228,62 @@
   background-color: #fde2e2;
   color: #c62828;
 }
+.documents-list {
+  margin-top: 24px;
+}
+
+.document-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.document-row:last-child {
+  border-bottom: none;
+}
+
+.document-row strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.document-row p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+.document-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.document-actions input[type="file"] {
+  max-width: 230px;
+  font-size: 13px;
+}
+.upload-button {
+  padding: 8px 14px;
+  border: 1px solid #1f4b7a;
+  border-radius: 6px;
+  color: #1f4b7a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: white;
+}
+
+.upload-button:hover {
+  background: #f3f6fa;
+}
+.file-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #4b5563;
+}

@@ -5,10 +5,12 @@ from models.empleado import Empleado
 from models.invitacion import Invitacion
 from models.usuario import Usuario
 from models.solicitud_correccion import SolicitudCorreccion
+from models.documento import Documento
 from routers.empleados import router as empleados_router
 from routers.invitaciones import router as invitaciones_router
 from routers.usuarios import router as usuarios_router
 from routers.solicitudes_correccion import router as solicitudes_correccion_router
+from routers.documentos import router as documentos_router
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -35,6 +37,7 @@ app.include_router(empleados_router)
 app.include_router(invitaciones_router)
 app.include_router(usuarios_router)
 app.include_router(solicitudes_correccion_router)
+app.include_router(documentos_router)
 
 
 @app.get("/")

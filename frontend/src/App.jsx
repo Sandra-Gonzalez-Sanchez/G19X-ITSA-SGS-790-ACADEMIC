@@ -36,6 +36,10 @@ const [apellidoPaternoSolicitado, setApellidoPaternoSolicitado] = useState('')
 const [apellidoMaternoSolicitado, setApellidoMaternoSolicitado] = useState('')
 const [motivoCorreccion, setMotivoCorreccion] = useState('')
 const [cuentaCreada, setCuentaCreada] = useState(false)
+const [tipoDocumentoSeleccionado, setTipoDocumentoSeleccionado] = useState('')
+const [archivoSeleccionado, setArchivoSeleccionado] = useState(null)
+const [mensajeDocumento, setMensajeDocumento] = useState('')
+const [documentos, setDocumentos] = useState([])
 
 
   const iniciarSesion = async (e) => {
@@ -43,7 +47,7 @@ const [cuentaCreada, setCuentaCreada] = useState(false)
 
   try {
     const respuesta = await fetch(
-      'http://127.0.0.1:8000/usuarios/login',
+      'http://127.0.0.1:8001/usuarios/login',
       {
         method: 'POST',
         headers: {
@@ -85,7 +89,7 @@ const [cuentaCreada, setCuentaCreada] = useState(false)
 const cargarPerfilEmpleado = async (token) => {
   try {
     const respuesta = await fetch(
-      'http://127.0.0.1:8000/empleados/mi-perfil',
+      'http://127.0.0.1:8001/empleados/mi-perfil',
       {
         method: 'GET',
         headers: {
@@ -104,6 +108,75 @@ const cargarPerfilEmpleado = async (token) => {
 
   } catch (error) {
     console.error('Error al consultar el perfil:', error)
+  }
+}
+
+const subirDocumento = async () => {
+  if (!archivoSeleccionado || !tipoDocumentoSeleccionado) {
+    setMensajeDocumento('Selecciona un archivo PDF.')
+    return
+  }
+
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const formData = new FormData()
+    formData.append('tipo_documento', tipoDocumentoSeleccionado)
+    formData.append('archivo', archivoSeleccionado)
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/documentos/subir',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setMensajeDocumento('Documento cargado correctamente.')
+      setArchivoSeleccionado(null)
+      setTipoDocumentoSeleccionado('')
+      await cargarDocumentos()
+    } else {
+      setMensajeDocumento(datos.detail || 'No fue posible cargar el documento.')
+    }
+
+  } catch (error) {
+    console.error('Error al subir documento:', error)
+    setMensajeDocumento('No fue posible conectar con el servidor.')
+  }
+}
+
+const cargarDocumentos = async () => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/documentos/mis-documentos',
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setDocumentos(datos)
+      console.log('Documentos cargados:', datos)
+    } else {
+      console.error('Error al cargar documentos:', datos.detail)
+    }
+
+  } catch (error) {
+    console.error('Error al consultar documentos:', error)
   }
 }
 
@@ -130,7 +203,7 @@ const enviarSolicitudCorreccion = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8000/solicitudes-correccion/',
+      'http://127.0.0.1:8001/solicitudes-correccion/',
       {
         method: 'POST',
         headers: {
@@ -184,7 +257,7 @@ const registrarEmpleado = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8000/empleados/',
+      'http://127.0.0.1:8001/empleados/',
       {
         method: 'POST',
         headers: {
@@ -232,7 +305,7 @@ const cargarEmpleados = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8000/empleados/',
+      'http://127.0.0.1:8001/empleados/',
       {
         method: 'GET',
         headers: {
@@ -260,7 +333,7 @@ const cargarSolicitudes = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8000/solicitudes-correccion/',
+      'http://127.0.0.1:8001/solicitudes-correccion/',
       {
         method: 'GET',
         headers: {
@@ -288,7 +361,7 @@ const resolverSolicitud = async (solicitudId, accion) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8000/solicitudes-correccion/${solicitudId}/resolver`,
+      `http://127.0.0.1:8001/solicitudes-correccion/${solicitudId}/resolver`,
       {
         method: 'PUT',
         headers: {
@@ -323,7 +396,7 @@ const enviarInvitacion = async (empleadoId) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8000/empleados/${empleadoId}/invitacion`,
+      `http://127.0.0.1:8001/empleados/${empleadoId}/invitacion`,
       {
         method: 'POST',
         headers: {
@@ -348,7 +421,7 @@ const enviarInvitacion = async (empleadoId) => {
 const validarInvitacion = async () => {
   try {
     const respuesta = await fetch(
-      `http://127.0.0.1:8000/invitaciones/${tokenInvitacion}/validar`
+      `http://127.0.0.1:8001/invitaciones/${tokenInvitacion}/validar`
     )
 
     const datos = await respuesta.json()
@@ -405,7 +478,7 @@ const crearPasswordEmpleado = async () => {
 
   try {
     const respuesta = await fetch(
-      `http://127.0.0.1:8000/invitaciones/${tokenInvitacion}/crear-password`,
+      `http://127.0.0.1:8001/invitaciones/${tokenInvitacion}/crear-password`,
       {
         method: 'POST',
         headers: {
@@ -846,7 +919,15 @@ if (rol === 'EMPLEADO') {
         Mis datos
       </button>
 
-      <button>Documentos</button>
+      <button
+          className={seccionEmpleado === 'documentos' ? 'active' : ''}
+          onClick={() => {
+            setSeccionEmpleado('documentos')
+            cargarDocumentos()
+          }}
+      >
+        Documentos
+      </button>
 
       <button>Seguimiento</button>
 
@@ -992,6 +1073,128 @@ if (rol === 'EMPLEADO') {
 
             </div>
   )}
+
+
+{seccionEmpleado === 'documentos' && (
+  <div>
+    <div className="page-header">
+      <div>
+        <h1>Mis documentos</h1>
+        <p>
+          Carga los documentos requeridos para completar tu expediente.
+        </p>
+      </div>
+    </div>
+
+    <div className="employee-profile-card">
+  <h2>Documentación requerida</h2>
+  <p>
+    Los documentos deberán cargarse en formato PDF.
+  </p>
+
+  <div className="documents-list">
+
+    <div className="document-row">
+      <div>
+        <strong>Acta de nacimiento</strong>
+        <p>Documento obligatorio</p>
+      </div>
+      <span className="status status-pending">Pendiente</span>
+    </div>
+
+    <div className="document-row">
+  <div>
+    <strong>CURP</strong>
+    <p>Documento obligatorio</p>
+  </div>
+
+  <div className="document-actions">
+
+  <span className="status status-pending">
+  {documentos.find(
+    (documento) => documento.tipo_documento === 'CURP'
+  )?.estado || 'Pendiente'}
+</span>
+
+  {tipoDocumentoSeleccionado === 'CURP' && archivoSeleccionado ? (
+    <>
+      <span className="file-name">
+        {archivoSeleccionado.name}
+      </span>
+
+      <button
+        className="primary-button"
+        onClick={subirDocumento}
+      >
+        Subir documento
+      </button>
+    </>
+  ) : (
+    <label className="upload-button">
+      Seleccionar PDF
+
+      <input
+        type="file"
+        accept=".pdf,application/pdf"
+        hidden
+        onChange={(e) => {
+          setTipoDocumentoSeleccionado('CURP')
+          setArchivoSeleccionado(e.target.files[0])
+        }}
+      />
+    </label>
+  )}
+</div>
+
+
+</div>
+
+    <div className="document-row">
+      <div>
+        <strong>INE</strong>
+        <p>Documento obligatorio</p>
+      </div>
+      <span className="status status-pending">Pendiente</span>
+    </div>
+
+    <div className="document-row">
+      <div>
+        <strong>RFC / Constancia de Situación Fiscal</strong>
+        <p>Documento obligatorio</p>
+      </div>
+      <span className="status status-pending">Pendiente</span>
+    </div>
+
+    <div className="document-row">
+      <div>
+        <strong>Comprobante de domicilio</strong>
+        <p>Documento obligatorio</p>
+      </div>
+      <span className="status status-pending">Pendiente</span>
+    </div>
+
+    <div className="document-row">
+      <div>
+        <strong>Documento bancario para nómina</strong>
+        <p>Documento obligatorio</p>
+      </div>
+      <span className="status status-pending">Pendiente</span>
+    </div>
+
+    <div className="document-row">
+      <div>
+        <strong>Documento de Seguridad Social</strong>
+        <p>Documento condicional</p>
+      </div>
+      <span className="status status-pending">Pendiente</span>
+    </div>
+
+  </div>
+</div>
+
+
+  </div>
+)}
 
   </main>
 
