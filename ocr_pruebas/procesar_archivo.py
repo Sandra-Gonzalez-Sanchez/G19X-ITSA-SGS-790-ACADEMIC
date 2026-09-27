@@ -2,6 +2,9 @@ import sys
 import json
 import os
 
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
+
 ruta_proyecto = os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))
 )

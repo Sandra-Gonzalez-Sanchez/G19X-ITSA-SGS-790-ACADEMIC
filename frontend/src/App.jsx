@@ -41,6 +41,44 @@ const [archivoSeleccionado, setArchivoSeleccionado] = useState(null)
 const [mensajeDocumento, setMensajeDocumento] = useState('')
 const [documentos, setDocumentos] = useState([])
 
+const documentosRequeridos = [
+  {
+    tipo: 'ACTA_NACIMIENTO',
+    nombre: 'Acta de nacimiento',
+    descripcion: 'Documento obligatorio'
+  },
+  {
+    tipo: 'CURP',
+    nombre: 'CURP',
+    descripcion: 'Documento obligatorio'
+  },
+  {
+    tipo: 'INE',
+    nombre: 'INE',
+    descripcion: 'Documento obligatorio'
+  },
+  {
+    tipo: 'RFC',
+    nombre: 'RFC / Constancia de Situación Fiscal',
+    descripcion: 'Documento obligatorio'
+  },
+  {
+    tipo: 'COMPROBANTE_DOMICILIO',
+    nombre: 'Comprobante de domicilio',
+    descripcion: 'Documento obligatorio'
+  },
+  {
+    tipo: 'DOCUMENTO_BANCARIO',
+    nombre: 'Documento bancario para nómina',
+    descripcion: 'Documento obligatorio'
+  },
+  {
+    tipo: 'SEGURIDAD_SOCIAL',
+    nombre: 'Documento de Seguridad Social',
+    descripcion: 'Documento condicional'
+  }
+]
+
 
   const iniciarSesion = async (e) => {
   e.preventDefault()
@@ -138,13 +176,22 @@ const subirDocumento = async () => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-      setMensajeDocumento('Documento cargado correctamente.')
-      setArchivoSeleccionado(null)
-      setTipoDocumentoSeleccionado('')
-      await cargarDocumentos()
-    } else {
-      setMensajeDocumento(datos.detail || 'No fue posible cargar el documento.')
-    }
+  if (datos.documento_aceptado === false) {
+    setMensajeDocumento(datos.mensaje)
+    setArchivoSeleccionado(null)
+    await cargarDocumentos()
+    return
+  }
+
+  setMensajeDocumento('Documento cargado correctamente.')
+  setArchivoSeleccionado(null)
+  setTipoDocumentoSeleccionado('')
+  await cargarDocumentos()
+} else {
+  setMensajeDocumento(
+    datos.detail || 'No fue posible cargar el documento.'
+  )
+}
 
   } catch (error) {
     console.error('Error al subir documento:', error)
@@ -1092,108 +1139,75 @@ if (rol === 'EMPLEADO') {
     Los documentos deberán cargarse en formato PDF.
   </p>
 
+  {mensajeDocumento && (
+  <p>{mensajeDocumento}</p>
+   )}
+
   <div className="documents-list">
+    {documentosRequeridos.map((documentoRequerido) => {
+  const documentoGuardado = documentos.find(
+    (documento) =>
+      documento.tipo_documento === documentoRequerido.tipo
+  )
 
-    <div className="document-row">
+  const estaSeleccionado =
+    tipoDocumentoSeleccionado === documentoRequerido.tipo &&
+    archivoSeleccionado
+
+  return (
+    <div
+      className="document-row"
+      key={documentoRequerido.tipo}
+    >
       <div>
-        <strong>Acta de nacimiento</strong>
-        <p>Documento obligatorio</p>
+        <strong>{documentoRequerido.nombre}</strong>
+        <p>{documentoRequerido.descripcion}</p>
       </div>
-      <span className="status status-pending">Pendiente</span>
-    </div>
 
-    <div className="document-row">
-  <div>
-    <strong>CURP</strong>
-    <p>Documento obligatorio</p>
-  </div>
+      <div className="document-actions">
+        <span className="status status-pending">
+          {documentoGuardado?.estado || 'PENDIENTE'}
+        </span>
 
-  <div className="document-actions">
+        {estaSeleccionado ? (
+          <>
+            <span className="file-name">
+              {archivoSeleccionado.name}
+            </span>
 
-  <span className="status status-pending">
-  {documentos.find(
-    (documento) => documento.tipo_documento === 'CURP'
-  )?.estado || 'Pendiente'}
-</span>
+            <button
+              className="primary-button"
+              onClick={subirDocumento}
+            >
+              Subir documento
+            </button>
+          </>
+        ) : (
+          <label className="upload-button">
+            Seleccionar PDF
 
-  {tipoDocumentoSeleccionado === 'CURP' && archivoSeleccionado ? (
-    <>
-      <span className="file-name">
-        {archivoSeleccionado.name}
-      </span>
-
-      <button
-        className="primary-button"
-        onClick={subirDocumento}
-      >
-        Subir documento
-      </button>
-    </>
-  ) : (
-    <label className="upload-button">
-      Seleccionar PDF
-
-      <input
-        type="file"
-        accept=".pdf,application/pdf"
-        hidden
-        onChange={(e) => {
-          setTipoDocumentoSeleccionado('CURP')
-          setArchivoSeleccionado(e.target.files[0])
-        }}
-      />
-    </label>
-  )}
-</div>
-
-
-</div>
-
-    <div className="document-row">
-      <div>
-        <strong>INE</strong>
-        <p>Documento obligatorio</p>
+            <input
+              type="file"
+              accept=".pdf,application/pdf"
+              hidden
+              onChange={(e) => {
+                setTipoDocumentoSeleccionado(
+                  documentoRequerido.tipo
+                )
+                setArchivoSeleccionado(e.target.files[0])
+                setMensajeDocumento('')
+              }}
+            />
+          </label>
+        )}
       </div>
-      <span className="status status-pending">Pendiente</span>
     </div>
-
-    <div className="document-row">
-      <div>
-        <strong>RFC / Constancia de Situación Fiscal</strong>
-        <p>Documento obligatorio</p>
-      </div>
-      <span className="status status-pending">Pendiente</span>
-    </div>
-
-    <div className="document-row">
-      <div>
-        <strong>Comprobante de domicilio</strong>
-        <p>Documento obligatorio</p>
-      </div>
-      <span className="status status-pending">Pendiente</span>
-    </div>
-
-    <div className="document-row">
-      <div>
-        <strong>Documento bancario para nómina</strong>
-        <p>Documento obligatorio</p>
-      </div>
-      <span className="status status-pending">Pendiente</span>
-    </div>
-
-    <div className="document-row">
-      <div>
-        <strong>Documento de Seguridad Social</strong>
-        <p>Documento condicional</p>
-      </div>
-      <span className="status status-pending">Pendiente</span>
-    </div>
+  )
+})}
 
   </div>
 </div>
-
-
-  </div>
+</div>
 )}
 
   </main>

@@ -171,9 +171,21 @@ def extraer_nombre(textos):
     etiquetas_nombre = ["NOMBRE:", "NOMBRE COMPLETO:"]
 
     for i, texto in enumerate(textos):
-        if texto.strip().upper() in etiquetas_nombre:
+        texto_limpio = texto.strip()
+        texto_mayusculas = texto_limpio.upper()
+
+        # Caso 1: la etiqueta y el nombre vienen separados
+        if texto_mayusculas in etiquetas_nombre:
             if i + 1 < len(textos):
                 return textos[i + 1].strip()
+
+        # Caso 2: la etiqueta y el nombre vienen en la misma línea
+        for etiqueta in etiquetas_nombre:
+            if texto_mayusculas.startswith(etiqueta):
+                nombre = texto_limpio[len(etiqueta):].strip()
+
+                if nombre:
+                    return nombre
 
     return None
 
@@ -183,6 +195,13 @@ def extraer_fecha_nacimiento(textos):
     for i, texto in enumerate(textos):
         if "FECHA DE NACIMIENTO" in texto.upper():
 
+            # Caso 1: la fecha está en la misma línea
+            coincidencia = re.search(patron_fecha, texto)
+
+            if coincidencia:
+                return coincidencia.group()
+
+            # Caso 2: la fecha está en alguna de las líneas siguientes
             for siguiente_texto in textos[i + 1:i + 6]:
                 coincidencia = re.search(patron_fecha, siguiente_texto)
 
@@ -225,6 +244,8 @@ def extraer_datos(textos):
 def procesar_documento(ruta_documento):
     textos = leer_documento(ruta_documento)
     datos = extraer_datos(textos)
+
+    datos["textos_detectados"] = textos
 
     return datos
 

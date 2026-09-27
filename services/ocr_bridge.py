@@ -29,7 +29,7 @@ def ejecutar_ocr(ruta_documento):
         ],
         capture_output=True,
         text=True,
-        encoding="cp1252",
+        encoding="utf-8",
         errors="replace"
     )
 
@@ -37,6 +37,15 @@ def ejecutar_ocr(ruta_documento):
         if linea.startswith("RESULTADO_OCR:"):
             json_texto = linea.replace("RESULTADO_OCR:", "", 1)
             return json.loads(json_texto)
+
+    print("STDOUT DEL OCR:")
+    print(resultado.stdout)
+
+    print("STDERR DEL OCR:")
+    print(resultado.stderr)
+
+    print("CÓDIGO DE SALIDA DEL OCR:")
+    print(resultado.returncode)
 
     raise RuntimeError(
         "No se encontró el resultado del OCR."

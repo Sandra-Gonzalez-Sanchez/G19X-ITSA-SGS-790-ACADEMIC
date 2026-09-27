@@ -7,6 +7,7 @@ from models.usuario import Usuario
 from models.solicitud_correccion import SolicitudCorreccion
 from models.documento import Documento
 from models.dato_extraido import DatoExtraido
+from models.validacion import Validacion
 from routers.empleados import router as empleados_router
 from routers.invitaciones import router as invitaciones_router
 from routers.usuarios import router as usuarios_router
