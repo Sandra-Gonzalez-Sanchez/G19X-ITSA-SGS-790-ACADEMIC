@@ -188,6 +188,9 @@ def subir_documento(
             documento_id=documento.id,
             nombre=datos_ocr.get("nombre"),
             fecha_nacimiento=datos_ocr.get("fecha_nacimiento"),
+            domicilio=datos_ocr.get("domicilio"),
+            clabe=datos_ocr.get("clabe"),
+            nss=datos_ocr.get("nss"),
             curp=datos_ocr.get("curp"),
             curp_candidata=datos_ocr.get("curp_candidata"),
             estado_formato_curp=datos_ocr.get("estado_formato_curp"),
@@ -204,6 +207,9 @@ def subir_documento(
     else:
         dato_extraido_existente.nombre = datos_ocr.get("nombre")
         dato_extraido_existente.fecha_nacimiento = datos_ocr.get("fecha_nacimiento")
+        dato_extraido_existente.domicilio = datos_ocr.get("domicilio")
+        dato_extraido_existente.clabe = datos_ocr.get("clabe")
+        dato_extraido_existente.nss = datos_ocr.get("nss")
         dato_extraido_existente.curp = datos_ocr.get("curp")
         dato_extraido_existente.curp_candidata = datos_ocr.get("curp_candidata")
         dato_extraido_existente.estado_formato_curp = datos_ocr.get("estado_formato_curp")
@@ -360,6 +366,52 @@ def subir_documento(
 
                             print("VALIDACIÓN CURP ↔ INE:")
                             print("CURP:", resultado_curp)
+
+            if documento_acta and documento_rfc:
+                datos_acta = db.query(DatoExtraido).filter(
+                    DatoExtraido.documento_id == documento_acta.id
+                ).first()
+
+                datos_rfc = db.query(DatoExtraido).filter(
+                    DatoExtraido.documento_id == documento_rfc.id
+                ).first()
+
+                if datos_acta and datos_rfc:
+                    resultado_nombre_rfc = comparar_nombres(
+                        datos_acta.nombre,
+                        datos_rfc.nombre
+                    )
+
+                    resultado_fecha_rfc = comparar_fechas(
+                        datos_acta.fecha_nacimiento,
+                        datos_rfc.fecha_nacimiento
+                    )
+
+                    guardar_validacion(
+                        db=db,
+                        empleado_id=empleado.id,
+                        campo="NOMBRE",
+                        documento_origen="ACTA_NACIMIENTO",
+                        documento_comparado="RFC",
+                        valor_origen=datos_acta.nombre,
+                        valor_comparado=datos_rfc.nombre,
+                        resultado=resultado_nombre_rfc
+                    )
+
+                    guardar_validacion(
+                        db=db,
+                        empleado_id=empleado.id,
+                        campo="FECHA_NACIMIENTO",
+                        documento_origen="ACTA_NACIMIENTO",
+                        documento_comparado="RFC",
+                        valor_origen=datos_acta.fecha_nacimiento,
+                        valor_comparado=datos_rfc.fecha_nacimiento,
+                        resultado=resultado_fecha_rfc
+                    )
+
+                    print("VALIDACIÓN ACTA ↔ RFC:")
+                    print("NOMBRE:", resultado_nombre_rfc)
+                    print("FECHA DE NACIMIENTO:", resultado_fecha_rfc)
 
             return {
                 "mensaje": "Documento guardado correctamente",

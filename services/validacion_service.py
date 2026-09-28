@@ -90,7 +90,42 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
                 "RFC"
             ],
             "minimo_coincidencias": 1
+        },
+
+        "COMPROBANTE_DOMICILIO": {
+            "palabras_clave": [
+                "COMPROBANTE DE DOMICILIO",
+                "DOMICILIO",
+                "DIRECCIÓN",
+                "SERVICIO",
+                "TOTAL A PAGAR"
+            ],
+            "minimo_coincidencias": 2
+        },
+
+        "DOCUMENTO_BANCARIO": {
+            "palabras_clave": [
+                "DATOS BANCARIOS",
+                "CUENTA",
+                "CLABE",
+                "TITULAR",
+                "BANCO"
+            ],
+            "minimo_coincidencias": 2
+        },
+
+        "SEGURIDAD_SOCIAL": {
+            "palabras_clave": [
+                "INSTITUTO MEXICANO DEL SEGURO SOCIAL",
+                "IMSS",
+                "NÚMERO DE SEGURIDAD SOCIAL",
+                "NUMERO DE SEGURIDAD SOCIAL",
+                "NSS"
+            ],
+            "minimo_coincidencias": 1
         }
+
+
     }
 
     regla = reglas_documentos.get(tipo_documento)

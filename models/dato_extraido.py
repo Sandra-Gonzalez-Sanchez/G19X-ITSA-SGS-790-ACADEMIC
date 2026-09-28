@@ -16,6 +16,9 @@ class DatoExtraido(Base):
 
     nombre = Column(String(200), nullable=True)
     fecha_nacimiento = Column(String(20), nullable=True)
+    domicilio = Column(String(500), nullable=True)
+    clabe = Column(String(18), nullable=True)
+    nss = Column(String(11), nullable=True)
 
     curp = Column(String(18), nullable=True)
     curp_candidata = Column(String(50), nullable=True)

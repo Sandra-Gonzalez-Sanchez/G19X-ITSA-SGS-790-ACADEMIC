@@ -114,6 +114,61 @@ def extraer_rfc(textos):
 
     return None
 
+def extraer_clabe(textos):
+    patron_clabe = r"\b\d{18}\b"
+
+    for i, texto in enumerate(textos):
+        texto_mayusculas = texto.strip().upper()
+
+        if "CLABE" in texto_mayusculas:
+            # Caso 1: CLABE y número en la misma línea
+            coincidencia = re.search(patron_clabe, texto)
+
+            if coincidencia:
+                return coincidencia.group()
+
+            # Caso 2: el número está en la siguiente línea
+            for siguiente_texto in textos[i + 1:i + 3]:
+                coincidencia = re.search(
+                    patron_clabe,
+                    siguiente_texto
+                )
+
+                if coincidencia:
+                    return coincidencia.group()
+
+    return None
+
+def extraer_nss(textos):
+    patron_nss = r"\b\d{11}\b"
+
+    for i, texto in enumerate(textos):
+        texto_mayusculas = texto.strip().upper()
+
+        if (
+            "NÚMERO DE SEGURIDAD SOCIAL" in texto_mayusculas
+            or "NUMERO DE SEGURIDAD SOCIAL" in texto_mayusculas
+            or texto_mayusculas == "NSS:"
+            or texto_mayusculas == "NSS"
+        ):
+            # Caso 1: NSS y número en la misma línea
+            coincidencia = re.search(patron_nss, texto)
+
+            if coincidencia:
+                return coincidencia.group()
+
+            # Caso 2: NSS en las siguientes líneas
+            for siguiente_texto in textos[i + 1:i + 3]:
+                coincidencia = re.search(
+                    patron_nss,
+                    siguiente_texto
+                )
+
+                if coincidencia:
+                    return coincidencia.group()
+
+    return None
+
 def analizar_rfc(textos):
     rfc = extraer_rfc(textos)
 
@@ -168,7 +223,7 @@ def comparar_fecha_con_rfc(fecha_nacimiento, rfc):
     return "NO COINCIDE"
 
 def extraer_nombre(textos):
-    etiquetas_nombre = ["NOMBRE:", "NOMBRE COMPLETO:"]
+    etiquetas_nombre = ["NOMBRE:", "NOMBRE COMPLETO:", "TITULAR:"]
 
     textos_ignorar = [
         "NOMBRE DE LA PERSONA",
@@ -203,6 +258,24 @@ def extraer_nombre(textos):
 
     return None
 
+def extraer_domicilio(textos):
+    for i, texto in enumerate(textos):
+        texto_mayusculas = texto.strip().upper()
+
+        if texto_mayusculas in ["DOMICILIO:", "DIRECCIÓN:", "DIRECCION:"]:
+            lineas_domicilio = []
+
+            for siguiente_texto in textos[i + 1:i + 3]:
+                linea = siguiente_texto.strip()
+
+                if linea:
+                    lineas_domicilio.append(linea)
+
+            if lineas_domicilio:
+                return " ".join(lineas_domicilio)
+
+    return None
+
 def extraer_fecha_nacimiento(textos):
     patron_fecha = r"\b\d{2}/\d{2}/\d{4}\b"
 
@@ -230,6 +303,9 @@ def extraer_datos(textos):
     analisis_curp = analizar_curp(textos)
     analisis_rfc = analizar_rfc(textos)
     fecha_nacimiento = extraer_fecha_nacimiento(textos)
+    domicilio = extraer_domicilio(textos)
+    clabe = extraer_clabe(textos)
+    nss = extraer_nss(textos)
 
     comparacion_fecha_curp = comparar_fecha_con_curp(
         fecha_nacimiento,
@@ -244,6 +320,9 @@ def extraer_datos(textos):
     datos = {
         "nombre": extraer_nombre(textos),
         "fecha_nacimiento": fecha_nacimiento,
+        "domicilio": domicilio,
+        "clabe": clabe,
+        "nss": nss,
         "curp": analisis_curp["curp"],
         "curp_candidata": analisis_curp["curp_candidata"],
         "estado_formato_curp": analisis_curp["estado_formato_curp"],
