@@ -170,14 +170,28 @@ def comparar_fecha_con_rfc(fecha_nacimiento, rfc):
 def extraer_nombre(textos):
     etiquetas_nombre = ["NOMBRE:", "NOMBRE COMPLETO:"]
 
+    textos_ignorar = [
+        "NOMBRE DE LA PERSONA",
+        "NOMBRE DEL TITULAR"
+    ]
+
     for i, texto in enumerate(textos):
         texto_limpio = texto.strip()
         texto_mayusculas = texto_limpio.upper()
 
         # Caso 1: la etiqueta y el nombre vienen separados
         if texto_mayusculas in etiquetas_nombre:
-            if i + 1 < len(textos):
-                return textos[i + 1].strip()
+
+            # Revisamos las siguientes líneas buscando el nombre real
+            for siguiente_texto in textos[i + 1:i + 4]:
+                candidato = siguiente_texto.strip()
+                candidato_mayusculas = candidato.upper()
+
+                if candidato_mayusculas in textos_ignorar:
+                    continue
+
+                if candidato:
+                    return candidato
 
         # Caso 2: la etiqueta y el nombre vienen en la misma línea
         for etiqueta in etiquetas_nombre:

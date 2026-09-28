@@ -15,7 +15,7 @@ ocr = PaddleOCR(
 print("Analizando documento...")
 
 resultado = ocr.predict(
-    input="ocr_pruebas/acta_prueba.pdf"
+    input="ocr_pruebas/curp_juan_prueba.pdf"
 )
 
 print("\n=== TEXTO RECONOCIDO ===")

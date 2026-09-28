@@ -14,6 +14,7 @@ from services.ocr_bridge import ejecutar_ocr
 from services.validacion_service import (
     comparar_nombres,
     comparar_fechas,
+    comparar_curp,
     validar_tipo_documento
 )
 
@@ -23,6 +24,43 @@ router = APIRouter(
     prefix="/documentos",
     tags=["Documentos"]
 )
+
+def guardar_validacion(
+    db,
+    empleado_id,
+    campo,
+    documento_origen,
+    documento_comparado,
+    valor_origen,
+    valor_comparado,
+    resultado
+):
+    validacion = db.query(Validacion).filter(
+        Validacion.empleado_id == empleado_id,
+        Validacion.campo == campo,
+        Validacion.documento_origen == documento_origen,
+        Validacion.documento_comparado == documento_comparado
+    ).first()
+
+    if validacion:
+        validacion.valor_origen = valor_origen
+        validacion.valor_comparado = valor_comparado
+        validacion.resultado = resultado
+
+    else:
+        validacion = Validacion(
+            empleado_id=empleado_id,
+            campo=campo,
+            documento_origen=documento_origen,
+            documento_comparado=documento_comparado,
+            valor_origen=valor_origen,
+            valor_comparado=valor_comparado,
+            resultado=resultado
+        )
+
+        db.add(validacion)
+
+    db.commit()
 
 @router.post("/subir")
 def subir_documento(
@@ -192,6 +230,16 @@ def subir_documento(
         Documento.tipo_documento == "CURP"
     ).first()
 
+    documento_ine = db.query(Documento).filter(
+        Documento.empleado_id == empleado.id,
+        Documento.tipo_documento == "INE"
+    ).first()
+
+    documento_rfc = db.query(Documento).filter(
+        Documento.empleado_id == empleado.id,
+        Documento.tipo_documento == "RFC"
+    ).first()
+
     if documento_acta and documento_curp:
         datos_acta = db.query(DatoExtraido).filter(
             DatoExtraido.documento_id == documento_acta.id
@@ -201,38 +249,19 @@ def subir_documento(
             DatoExtraido.documento_id == documento_curp.id
         ).first()
 
-        print("DATOS PARA VALIDACIÓN CRUZADA:")
-        print("ACTA:", datos_acta.nombre, datos_acta.fecha_nacimiento)
-        print("CURP:", datos_curp.nombre, datos_curp.fecha_nacimiento)
+        if datos_acta and datos_curp:
+            resultado_nombre = comparar_nombres(
+                datos_acta.nombre,
+                datos_curp.nombre
+            )
 
-        resultado_nombre = comparar_nombres(
-            datos_acta.nombre,
-            datos_curp.nombre
-        )
+            resultado_fecha = comparar_fechas(
+                datos_acta.fecha_nacimiento,
+                datos_curp.fecha_nacimiento
+            )
 
-        resultado_fecha = comparar_fechas(
-            datos_acta.fecha_nacimiento,
-            datos_curp.fecha_nacimiento
-        )
-
-        print("RESULTADO COMPARACIÓN:")
-        print("NOMBRE:", resultado_nombre)
-        print("FECHA DE NACIMIENTO:", resultado_fecha)
-
-        validacion_nombre = db.query(Validacion).filter(
-            Validacion.empleado_id == empleado.id,
-            Validacion.campo == "NOMBRE",
-            Validacion.documento_origen == "ACTA_NACIMIENTO",
-            Validacion.documento_comparado == "CURP"
-        ).first()
-
-        if validacion_nombre:
-            validacion_nombre.valor_origen = datos_acta.nombre
-            validacion_nombre.valor_comparado = datos_curp.nombre
-            validacion_nombre.resultado = resultado_nombre
-
-        else:
-            validacion_nombre = Validacion(
+            guardar_validacion(
+                db=db,
                 empleado_id=empleado.id,
                 campo="NOMBRE",
                 documento_origen="ACTA_NACIMIENTO",
@@ -242,26 +271,8 @@ def subir_documento(
                 resultado=resultado_nombre
             )
 
-            db.add(validacion_nombre)
-
-        db.commit()
-
-        print("VALIDACIÓN DE NOMBRE GUARDADA O ACTUALIZADA")
-
-        validacion_fecha = db.query(Validacion).filter(
-            Validacion.empleado_id == empleado.id,
-            Validacion.campo == "FECHA_NACIMIENTO",
-            Validacion.documento_origen == "ACTA_NACIMIENTO",
-            Validacion.documento_comparado == "CURP"
-        ).first()
-
-        if validacion_fecha:
-            validacion_fecha.valor_origen = datos_acta.fecha_nacimiento
-            validacion_fecha.valor_comparado = datos_curp.fecha_nacimiento
-            validacion_fecha.resultado = resultado_fecha
-
-        else:
-            validacion_fecha = Validacion(
+            guardar_validacion(
+                db=db,
                 empleado_id=empleado.id,
                 campo="FECHA_NACIMIENTO",
                 documento_origen="ACTA_NACIMIENTO",
@@ -271,18 +282,94 @@ def subir_documento(
                 resultado=resultado_fecha
             )
 
-            db.add(validacion_fecha)
+            print("VALIDACIÓN ACTA ↔ CURP:")
+            print("NOMBRE:", resultado_nombre)
+            print("FECHA DE NACIMIENTO:", resultado_fecha)
 
-        db.commit()
+            if documento_acta and documento_ine:
+                datos_acta = db.query(DatoExtraido).filter(
+                    DatoExtraido.documento_id == documento_acta.id
+                ).first()
 
-        print("VALIDACIÓN DE FECHA GUARDADA O ACTUALIZADA")
+                datos_ine = db.query(DatoExtraido).filter(
+                    DatoExtraido.documento_id == documento_ine.id
+                ).first()
 
-    return {
-        "mensaje": "Documento guardado correctamente",
-        "empleado_id": empleado.id,
-        "tipo_documento": tipo_documento,
-        "archivo": archivo.filename
-    }
+                if datos_acta and datos_ine:
+                    resultado_nombre = comparar_nombres(
+                        datos_acta.nombre,
+                        datos_ine.nombre
+                    )
+
+                    resultado_fecha = comparar_fechas(
+                        datos_acta.fecha_nacimiento,
+                        datos_ine.fecha_nacimiento
+                    )
+
+                    guardar_validacion(
+                        db=db,
+                        empleado_id=empleado.id,
+                        campo="NOMBRE",
+                        documento_origen="ACTA_NACIMIENTO",
+                        documento_comparado="INE",
+                        valor_origen=datos_acta.nombre,
+                        valor_comparado=datos_ine.nombre,
+                        resultado=resultado_nombre
+                    )
+
+                    guardar_validacion(
+                        db=db,
+                        empleado_id=empleado.id,
+                        campo="FECHA_NACIMIENTO",
+                        documento_origen="ACTA_NACIMIENTO",
+                        documento_comparado="INE",
+                        valor_origen=datos_acta.fecha_nacimiento,
+                        valor_comparado=datos_ine.fecha_nacimiento,
+                        resultado=resultado_fecha
+                    )
+
+                    print("VALIDACIÓN ACTA ↔ INE:")
+                    print("NOMBRE:", resultado_nombre)
+                    print("FECHA DE NACIMIENTO:", resultado_fecha)
+
+                    if documento_curp and documento_ine:
+                        datos_curp = db.query(DatoExtraido).filter(
+                            DatoExtraido.documento_id == documento_curp.id
+                        ).first()
+
+                        datos_ine = db.query(DatoExtraido).filter(
+                            DatoExtraido.documento_id == documento_ine.id
+                        ).first()
+
+                        if datos_curp and datos_ine:
+                            resultado_curp = comparar_curp(
+                                datos_curp.curp,
+                                datos_ine.curp
+                            )
+
+                            guardar_validacion(
+                                db=db,
+                                empleado_id=empleado.id,
+                                campo="CURP",
+                                documento_origen="CURP",
+                                documento_comparado="INE",
+                                valor_origen=datos_curp.curp,
+                                valor_comparado=datos_ine.curp,
+                                resultado=resultado_curp
+                            )
+
+                            print("VALIDACIÓN CURP ↔ INE:")
+                            print("CURP:", resultado_curp)
+
+            return {
+                "mensaje": "Documento guardado correctamente",
+                "empleado_id": empleado.id,
+                "tipo_documento": tipo_documento,
+                "archivo": archivo.filename
+            }
+
+
+
 
 @router.get("/mis-documentos")
 def obtener_mis_documentos(
