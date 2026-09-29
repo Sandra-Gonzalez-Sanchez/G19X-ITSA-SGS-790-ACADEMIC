@@ -32,6 +32,20 @@ const [invitacionValida, setInvitacionValida] = useState(null)
 const [mensajeInvitacion, setMensajeInvitacion] = useState('')
 const [nuevaPassword, setNuevaPassword] = useState('')
 const [confirmarPassword, setConfirmarPassword] = useState('')
+const passwordMinimo = nuevaPassword.length >= 8
+const passwordMayuscula = /[A-Z]/.test(nuevaPassword)
+const passwordMinuscula = /[a-z]/.test(nuevaPassword)
+const passwordNumero = /[0-9]/.test(nuevaPassword)
+const passwordEspecial = /[@#$%&!]/.test(nuevaPassword)
+const passwordSinEspacios = !/\s/.test(nuevaPassword)
+
+const passwordSegura =
+  passwordMinimo &&
+  passwordMayuscula &&
+  passwordMinuscula &&
+  passwordNumero &&
+  passwordEspecial &&
+  passwordSinEspacios
 const [apellidoPaternoSolicitado, setApellidoPaternoSolicitado] = useState('')
 const [apellidoMaternoSolicitado, setApellidoMaternoSolicitado] = useState('')
 const [motivoCorreccion, setMotivoCorreccion] = useState('')
@@ -40,6 +54,8 @@ const [tipoDocumentoSeleccionado, setTipoDocumentoSeleccionado] = useState('')
 const [archivoSeleccionado, setArchivoSeleccionado] = useState(null)
 const [mensajeDocumento, setMensajeDocumento] = useState('')
 const [documentos, setDocumentos] = useState([])
+const [expedienteSeleccionado, setExpedienteSeleccionado] = useState(null)
+const [cargandoExpediente, setCargandoExpediente] = useState(false)
 
 const documentosRequeridos = [
   {
@@ -227,6 +243,36 @@ const cargarDocumentos = async () => {
   }
 }
 
+const marcarSeguridadSocialNoAplica = async () => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/documentos/empleado/seguridad-social/no-aplica',
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setMensajeDocumento('Seguridad Social marcada como No aplica.')
+      await cargarDocumentos()
+    } else {
+      setMensajeDocumento(
+        datos.detail || 'No fue posible actualizar el documento.'
+      )
+    }
+  } catch (error) {
+    console.error('Error al actualizar Seguridad Social:', error)
+    setMensajeDocumento('No fue posible conectar con el servidor.')
+  }
+}
+
 const enviarSolicitudCorreccion = async () => {
     if (
       !nombreSolicitado.trim() &&
@@ -375,6 +421,68 @@ const cargarEmpleados = async () => {
   }
 }
 
+const cargarExpediente = async (empleadoId) => {
+  try {
+    setCargandoExpediente(true)
+
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/documentos/empleado/${empleadoId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      console.log('EXPEDIENTE RECIBIDO:', datos)
+      setExpedienteSeleccionado(datos)
+    } else {
+      console.error('Error al cargar expediente:', datos.detail)
+    }
+
+  } catch (error) {
+    console.error('Error al consultar expediente:', error)
+  } finally {
+    setCargandoExpediente(false)
+  }
+}
+
+const cambiarEstadoDocumento = async (documentoId, accion) => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/documentos/${documentoId}/${accion}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      alert(datos.detail || 'No fue posible actualizar el documento.')
+      return
+    }
+
+    // Recarga el expediente para mostrar el nuevo estado
+    await cargarExpediente(expedienteSeleccionado.empleado.id)
+
+  } catch (error) {
+    console.error('Error al actualizar documento:', error)
+    alert('No fue posible conectar con el servidor.')
+  }
+}
+
 const cargarSolicitudes = async () => {
   try {
     const token = localStorage.getItem('access_token')
@@ -518,6 +626,11 @@ const crearPasswordEmpleado = async () => {
     return
   }
 
+  if (!passwordSegura) {
+  alert('La contraseña no cumple con todos los requisitos de seguridad.')
+  return
+}
+
   if (nuevaPassword !== confirmarPassword) {
     alert('Las contraseñas no coinciden.')
     return
@@ -562,7 +675,7 @@ const cerrarSesion = () => {
 
 if (esInvitacion) {
   return (
-    <div>
+    <div className="invitation-page">
       <h1>Crear cuenta de empleado</h1>
 
       {invitacionValida === null && (
@@ -574,7 +687,7 @@ if (esInvitacion) {
       )}
 
       {invitacionValida === true && !cuentaCreada && (
-        <div>
+        <div className="invitation-card">
           <p>
             Tu invitación es válida. Crea una contraseña para acceder
             al Sistema de Ingreso de Personal.
@@ -587,6 +700,15 @@ if (esInvitacion) {
               value={nuevaPassword}
               onChange={(e) => setNuevaPassword(e.target.value)}
             />
+
+            <div className="password-requisitos">
+              <p>{passwordMinimo ? '✅' : '❌'} Mínimo 8 caracteres</p>
+              <p>{passwordMayuscula ? '✅' : '❌'} Una letra mayúscula</p>
+              <p>{passwordMinuscula ? '✅' : '❌'} Una letra minúscula</p>
+              <p>{passwordNumero ? '✅' : '❌'} Un número</p>
+              <p>{passwordEspecial ? '✅' : '❌'} Un carácter especial (@ # $ % & !)</p>
+              <p>{passwordSinEspacios ? '✅' : '❌'} Sin espacios</p>
+            </div>
           </div>
 
           <div>
@@ -615,7 +737,7 @@ if (esInvitacion) {
       )}
 
         {cuentaCreada && (
-      <div>
+      <div className="invitation-card invitation-success">
         <h2>Cuenta creada correctamente</h2>
 
         <p>
@@ -623,9 +745,17 @@ if (esInvitacion) {
           y la contraseña que acabas de registrar.
         </p>
 
-        <button onClick={() => window.location.href = '/'}>
+        <button
+          onClick={() => {
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('rol')
+            setRol(null)
+            window.location.href = '/'
+          }}
+        >
           Ir a iniciar sesión
         </button>
+
       </div>
     )}
 
@@ -658,7 +788,16 @@ if (rol === 'RH') {
           Empleados
       </button>
 
-      <button>Expedientes</button>
+     <button
+      className={seccionRH === 'expedientes' ? 'active' : ''}
+      onClick={() => {
+        setSeccionRH('expedientes')
+        setExpedienteSeleccionado(null)
+        cargarEmpleados()
+      }}
+    >
+      Expedientes
+    </button>
 
       <button
           className={seccionRH === 'solicitudes' ? 'active' : ''}
@@ -858,6 +997,219 @@ if (rol === 'RH') {
   )}
 
 
+{seccionRH === 'expedientes' && (
+  <div>
+
+    <div className="page-header">
+      <div>
+        <h1>Expedientes</h1>
+        <p>
+          Consulta y revisa la documentación de ingreso de los empleados.
+        </p>
+      </div>
+    </div>
+
+    {!expedienteSeleccionado ? (
+      <>
+        <h2 className="section-title">Empleados</h2>
+
+        {empleados.length === 0 ? (
+          <p>No hay empleados registrados.</p>
+        ) : (
+          <div className="employees-card">
+
+            {empleados.map((empleado) => (
+              <div className="employee-row" key={empleado.id}>
+
+                <div className="employee-info">
+                  <strong>
+                    {empleado.nombre} {empleado.apellido_paterno}{' '}
+                    {empleado.apellido_materno}
+                  </strong>
+
+                  <span>{empleado.correo}</span>
+                </div>
+
+                <div>
+                  <span className="employee-label">Área</span>
+                  <p>{empleado.area}</p>
+                </div>
+
+                <div>
+                  <span className="employee-label">Puesto</span>
+                  <p>{empleado.puesto}</p>
+                </div>
+
+                <div className="employee-action">
+                  <button
+                    className="primary-button"
+                    onClick={() => cargarExpediente(empleado.id)}
+                  >
+                    Ver expediente
+                  </button>
+                </div>
+
+              </div>
+            ))}
+
+          </div>
+        )}
+      </>
+    ) : (
+
+      <div>
+
+        <button
+          className="secondary-button"
+          onClick={() => setExpedienteSeleccionado(null)}
+        >
+          ← Volver a expedientes
+        </button>
+
+        <div className="employee-profile-card">
+
+          <h2>
+            {expedienteSeleccionado.empleado.nombre}{' '}
+            {expedienteSeleccionado.empleado.apellido_paterno}{' '}
+            {expedienteSeleccionado.empleado.apellido_materno}
+          </h2>
+
+          <div className="profile-grid">
+
+            <p>
+              <strong>Correo:</strong>{' '}
+              {expedienteSeleccionado.empleado.correo}
+            </p>
+
+            <p>
+              <strong>Área:</strong>{' '}
+              {expedienteSeleccionado.empleado.area}
+            </p>
+
+            <p>
+              <strong>Puesto:</strong>{' '}
+              {expedienteSeleccionado.empleado.puesto}
+            </p>
+
+            <p>
+              <strong>Fecha de ingreso:</strong>{' '}
+              {expedienteSeleccionado.empleado.fecha_ingreso}
+            </p>
+
+          </div>
+        </div>
+
+        <h2 className="section-title">
+          Documentación
+        </h2>
+
+        <div className="documents-list">
+
+          {expedienteSeleccionado.documentos.map((documento) => (
+
+            <div
+              className="document-row"
+              key={documento.id}
+            >
+
+              <div>
+  <strong>
+    {documentosRequeridos.find(
+      (item) => item.tipo === documento.tipo_documento
+    )?.nombre || documento.tipo_documento}
+  </strong>
+
+  {documento.estado === 'EN REVISION' &&
+    documento.motivos_revision?.length > 0 && (
+      <div>
+        <p>
+          <strong>Motivo de revisión:</strong>
+        </p>
+
+        {documento.motivos_revision.map((motivo, index) => (
+          <div key={index}>
+            {motivo.campo === 'NOMBRE_EMPLEADO' ? (
+              <p>
+                El nombre detectado en el documento no coincide con el
+                nombre registrado del empleado.
+                <br />
+                <strong>Registrado:</strong> {motivo.valor_origen}
+                <br />
+                <strong>Detectado:</strong> {motivo.valor_comparado}
+              </p>
+            ) : (
+              <p>
+                <strong>{motivo.campo}:</strong>{' '}
+                {motivo.resultado}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    )}
+</div>
+
+              <div className="document-actions">
+
+  <span className="status status-pending">
+    {documento.estado}
+  </span>
+
+  {documento.estado === 'EN REVISION' && (
+    <>
+      <button
+        className="primary-button"
+        onClick={() =>
+          cambiarEstadoDocumento(documento.id, 'aprobar')
+        }
+      >
+        Aprobar
+      </button>
+
+      <button
+        className="secondary-button"
+        onClick={() =>
+          cambiarEstadoDocumento(
+            documento.id,
+            'solicitar-correccion'
+          )
+        }
+      >
+        Solicitar corrección
+      </button>
+    </>
+  )}
+
+  {documento.tipo_documento === 'SEGURIDAD_SOCIAL' &&
+    documento.estado !== 'VALIDADO' &&
+    documento.estado !== 'NO APLICA' && (
+      <button
+        className="secondary-button"
+        onClick={() =>
+          cambiarEstadoDocumento(documento.id, 'no-aplica')
+        }
+      >
+        No aplicas
+      </button>
+  )}
+
+</div>
+
+            </div>
+
+          ))}
+
+        </div>
+
+      </div>
+    )}
+
+    {cargandoExpediente && (
+      <p>Cargando expediente...</p>
+    )}
+
+  </div>
+)}
 
     {seccionRH === 'solicitudes' && (
       <div>
@@ -976,7 +1328,15 @@ if (rol === 'EMPLEADO') {
         Documentos
       </button>
 
-      <button>Seguimiento</button>
+      <button
+          className={seccionEmpleado === 'seguimiento' ? 'active' : ''}
+          onClick={() => {
+            setSeccionEmpleado('seguimiento')
+            cargarDocumentos()
+          }}
+        >
+          Seguimiento
+       </button>
 
 </nav>
 
@@ -1169,6 +1529,16 @@ if (rol === 'EMPLEADO') {
           {documentoGuardado?.estado || 'PENDIENTE'}
         </span>
 
+        {documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
+  documentoGuardado?.estado !== 'NO APLICA' && (
+    <button
+      className="secondary-button"
+      onClick={marcarSeguridadSocialNoAplica}
+    >
+      No cuento con este documento
+    </button>
+)}
+
         {estaSeleccionado ? (
           <>
             <span className="file-name">
@@ -1208,6 +1578,83 @@ if (rol === 'EMPLEADO') {
   </div>
 </div>
 </div>
+)}
+
+{seccionEmpleado === 'seguimiento' && (
+  <div>
+    <div className="page-header">
+      <div>
+        <h1>Seguimiento de mi expediente</h1>
+        <p>
+          Consulta el estado de los documentos de tu proceso de ingreso.
+        </p>
+      </div>
+    </div>
+
+    <div className="employee-profile-card">
+      <h2>Avance de documentación</h2>
+
+      <p>
+        {
+          documentosRequeridos.filter((documentoRequerido) => {
+            const documentoGuardado = documentos.find(
+              (documento) =>
+                documento.tipo_documento === documentoRequerido.tipo
+            )
+
+            return (
+              documentoGuardado?.estado === 'VALIDADO' ||
+              documentoGuardado?.estado === 'NO APLICA'
+            )
+          }).length
+        } de {documentosRequeridos.length} documentos resueltos
+      </p>
+
+      <div className="documents-list">
+        {documentosRequeridos.map((documentoRequerido) => {
+          const documentoGuardado = documentos.find(
+            (documento) =>
+              documento.tipo_documento === documentoRequerido.tipo
+          )
+
+          const estado = documentoGuardado?.estado || 'PENDIENTE'
+
+          return (
+            <div
+              className="document-row"
+              key={documentoRequerido.tipo}
+            >
+              <div>
+                <strong>{documentoRequerido.nombre}</strong>
+
+                <p>
+                  {estado === 'VALIDADO' &&
+                    'Documento validado correctamente.'}
+
+                  {estado === 'EN REVISION' &&
+                    'El documento está siendo revisado.'}
+
+                  {estado === 'PENDIENTE' &&
+                    'Documento pendiente de completar.'}
+
+                  {estado === 'NO APLICA' &&
+                    'Este documento no es requerido para tu expediente.'}
+                </p>
+              </div>
+
+              <div className="document-actions">
+                <span className="status status-pending">
+                  {estado === 'EN REVISION'
+                    ? 'EN REVISIÓN'
+                    : estado}
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  </div>
 )}
 
   </main>
