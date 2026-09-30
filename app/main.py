@@ -8,11 +8,14 @@ from models.solicitud_correccion import SolicitudCorreccion
 from models.documento import Documento
 from models.dato_extraido import DatoExtraido
 from models.validacion import Validacion
+from models.area import Area
+from models.puesto import Puesto
 from routers.empleados import router as empleados_router
 from routers.invitaciones import router as invitaciones_router
 from routers.usuarios import router as usuarios_router
 from routers.solicitudes_correccion import router as solicitudes_correccion_router
 from routers.documentos import router as documentos_router
+from routers.catalogos import router as catalogos_router
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -40,6 +43,7 @@ app.include_router(invitaciones_router)
 app.include_router(usuarios_router)
 app.include_router(solicitudes_correccion_router)
 app.include_router(documentos_router)
+app.include_router(catalogos_router)
 
 
 @app.get("/")

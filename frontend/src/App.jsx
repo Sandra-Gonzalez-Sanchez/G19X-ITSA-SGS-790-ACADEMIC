@@ -21,6 +21,10 @@ const [nuevaFechaIngreso, setNuevaFechaIngreso] = useState('')
 const [mensajeEmpleado, setMensajeEmpleado] = useState('')
 const [empleados, setEmpleados] = useState([])
 const [solicitudes, setSolicitudes] = useState([])
+const [areas, setAreas] = useState([])
+const [puestos, setPuestos] = useState([])
+const [nombreNuevaArea, setNombreNuevaArea] = useState('')
+const [nombreNuevoPuesto, setNombreNuevoPuesto] = useState('')
 const [seccionRH, setSeccionRH] = useState('empleados')
 const [seccionEmpleado, setSeccionEmpleado] = useState('inicio')
 const rutaActual = window.location.pathname
@@ -421,6 +425,139 @@ const cargarEmpleados = async () => {
   }
 }
 
+const cargarAreas = async () => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/catalogos/areas',
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setAreas(datos.filter((area) => area.activo))
+    } else {
+      console.error('Error al cargar áreas:', datos.detail)
+    }
+
+  } catch (error) {
+    console.error('Error al consultar áreas:', error)
+  }
+}
+
+
+const cargarPuestos = async () => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/catalogos/puestos',
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setPuestos(datos.filter((puesto) => puesto.activo))
+    } else {
+      console.error('Error al cargar puestos:', datos.detail)
+    }
+
+  } catch (error) {
+    console.error('Error al consultar puestos:', error)
+  }
+}
+
+const crearArea = async () => {
+  if (!nombreNuevaArea.trim()) {
+    alert('Ingresa el nombre del área.')
+    return
+  }
+
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/catalogos/areas',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nombre: nombreNuevaArea
+        })
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setNombreNuevaArea('')
+      await cargarAreas()
+    } else {
+      alert(datos.detail || 'No fue posible registrar el área.')
+    }
+
+  } catch (error) {
+    console.error('Error al crear área:', error)
+    alert('No fue posible conectar con el servidor.')
+  }
+}
+
+
+const crearPuesto = async () => {
+  if (!nombreNuevoPuesto.trim()) {
+    alert('Ingresa el nombre del puesto.')
+    return
+  }
+
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/catalogos/puestos',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nombre: nombreNuevoPuesto
+        })
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setNombreNuevoPuesto('')
+      await cargarPuestos()
+    } else {
+      alert(datos.detail || 'No fue posible registrar el puesto.')
+    }
+
+  } catch (error) {
+    console.error('Error al crear puesto:', error)
+    alert('No fue posible conectar con el servidor.')
+  }
+}
+
+
 const cargarExpediente = async (empleadoId) => {
   try {
     setCargandoExpediente(true)
@@ -788,6 +925,18 @@ if (rol === 'RH') {
           Empleados
       </button>
 
+
+      <button
+  className={seccionRH === 'catalogos' ? 'active' : ''}
+  onClick={() => {
+    setSeccionRH('catalogos')
+    cargarAreas()
+    cargarPuestos()
+  }}
+>
+  Catálogos
+</button>
+
      <button
       className={seccionRH === 'expedientes' ? 'active' : ''}
       onClick={() => {
@@ -822,8 +971,103 @@ if (rol === 'RH') {
 
   <main className="dashboard-content">
 
+      {seccionRH === 'inicio' && (
+  <div>
+    <div className="page-header">
+      <div>
+        <h1>Bienvenido</h1>
+        <p>
+          Consulta el estado general del proceso de ingreso de personal.
+        </p>
+      </div>
+    </div>
+
+    <div className="dashboard-summary">
+
+      <div className="summary-card">
+        <span className="summary-label">Empleados registrados</span>
+        <strong className="summary-number">
+          {empleados.length}
+        </strong>
+        <p>Empleados dados de alta en el sistema.</p>
+      </div>
+
+      <div className="summary-card">
+        <span className="summary-label">Expedientes</span>
+        <strong className="summary-icon">📁</strong>
+        <p>Consulta la documentación de los empleados.</p>
+
+        <button
+          className="summary-link"
+          onClick={() => {
+            setSeccionRH('expedientes')
+            setExpedienteSeleccionado(null)
+            cargarEmpleados()
+          }}
+        >
+          Ver expedientes
+        </button>
+      </div>
+
+      <div className="summary-card">
+        <span className="summary-label">Solicitudes</span>
+        <strong className="summary-icon">📋</strong>
+        <p>Revisa las solicitudes de corrección recibidas.</p>
+
+        <button
+          className="summary-link"
+          onClick={() => {
+            setSeccionRH('solicitudes')
+            cargarSolicitudes()
+          }}
+        >
+          Ver solicitudes
+        </button>
+      </div>
+
+    </div>
+
+    <div className="quick-actions-card">
+      <h2>Acciones rápidas</h2>
+      <p>Accede a las funciones principales del sistema.</p>
+
+      <div className="quick-actions">
+        <button
+          className="primary-button"
+          onClick={() => {
+            setSeccionRH('empleados')
+            setMostrarAltaEmpleado(true)
+            cargarAreas()
+            cargarPuestos()
+          }}
+        >
+          + Dar de alta empleado
+        </button>
+
+        <button
+          className="secondary-button"
+          onClick={() => {
+            setSeccionRH('catalogos')
+            cargarAreas()
+            cargarPuestos()
+          }}
+        >
+          Administrar catálogos
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     {seccionRH === 'empleados' && (
-        <div>
+  <div>
+
+    <button
+      className="secondary-button back-button"
+      onClick={() => setSeccionRH('inicio')}
+    >
+      ← Volver al inicio
+    </button>
 
     <div className="page-header">
       <div>
@@ -833,7 +1077,11 @@ if (rol === 'RH') {
 
       <button
         className="primary-button"
-        onClick={() => setMostrarAltaEmpleado(true)}
+        onClick={() => {
+        setMostrarAltaEmpleado(true)
+        cargarAreas()
+        cargarPuestos()
+        }}
       >
         + Dar de alta empleado
       </button>
@@ -888,22 +1136,36 @@ if (rol === 'RH') {
         </div>
 
         <div>
-          <label>Área</label>
-          <input
-            type="text"
-            value={nuevaArea}
-            onChange={(e) => setNuevaArea(e.target.value)}
-          />
-        </div>
+  <label>Área</label>
+  <select
+    value={nuevaArea}
+    onChange={(e) => setNuevaArea(e.target.value)}
+  >
+    <option value="">Selecciona un área</option>
+
+    {areas.map((area) => (
+      <option key={area.id} value={area.nombre}>
+        {area.nombre}
+      </option>
+    ))}
+  </select>
+</div>
 
         <div>
-          <label>Puesto</label>
-          <input
-            type="text"
-            value={nuevoPuesto}
-            onChange={(e) => setNuevoPuesto(e.target.value)}
-          />
-        </div>
+  <label>Puesto</label>
+  <select
+    value={nuevoPuesto}
+    onChange={(e) => setNuevoPuesto(e.target.value)}
+  >
+    <option value="">Selecciona un puesto</option>
+
+    {puestos.map((puesto) => (
+      <option key={puesto.id} value={puesto.nombre}>
+        {puesto.nombre}
+      </option>
+    ))}
+  </select>
+</div>
 
         <div>
           <label>Fecha de ingreso</label>
@@ -996,9 +1258,108 @@ if (rol === 'RH') {
             </div>
   )}
 
+{seccionRH === 'catalogos' && (
+  <div>
+
+    <button
+      className="secondary-button back-button"
+      onClick={() => setSeccionRH('inicio')}
+    >
+      ← Volver al inicio
+    </button>
+
+    <div className="page-header">
+      <div>
+        <h1>Catálogos</h1>
+        <p>Administra las áreas y puestos disponibles para el registro de empleados.</p>
+      </div>
+    </div>
+
+    <div className="catalog-card">
+      <h2>Áreas</h2>
+
+      <div className="catalog-form">
+        <input
+          type="text"
+          placeholder="Nombre del área"
+          value={nombreNuevaArea}
+          onChange={(e) => setNombreNuevaArea(e.target.value)}
+        />
+
+        <button
+          className="primary-button"
+          onClick={crearArea}
+        >
+          Agregar área
+        </button>
+      </div>
+
+      <div className="documents-list">
+        {areas.length === 0 ? (
+          <p>No hay áreas registradas.</p>
+        ) : (
+          areas.map((area) => (
+            <div className="document-row" key={area.id}>
+              <strong>{area.nombre}</strong>
+
+              <span className="status status-active">
+                Activa
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+
+
+    <div className="catalog-card">
+      <h2>Puestos</h2>
+
+      <div className="catalog-form">
+        <input
+          type="text"
+          placeholder="Nombre del puesto"
+          value={nombreNuevoPuesto}
+          onChange={(e) => setNombreNuevoPuesto(e.target.value)}
+        />
+
+        <button
+          className="primary-button"
+          onClick={crearPuesto}
+        >
+          Agregar puesto
+        </button>
+      </div>
+
+      <div className="documents-list">
+        {puestos.length === 0 ? (
+          <p>No hay puestos registrados.</p>
+        ) : (
+          puestos.map((puesto) => (
+            <div className="document-row" key={puesto.id}>
+              <strong>{puesto.nombre}</strong>
+
+              <span className="status status-active">
+                Activo
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+
+  </div>
+)}
 
 {seccionRH === 'expedientes' && (
   <div>
+
+    <button
+      className="secondary-button back-button"
+      onClick={() => setSeccionRH('inicio')}
+    >
+      ← Volver al inicio
+    </button>
 
     <div className="page-header">
       <div>
@@ -1212,8 +1573,16 @@ if (rol === 'RH') {
 )}
 
     {seccionRH === 'solicitudes' && (
-      <div>
-        <div className="page-header">
+  <div>
+
+    <button
+      className="secondary-button back-button"
+      onClick={() => setSeccionRH('inicio')}
+    >
+      ← Volver al inicio
+    </button>
+
+    <div className="page-header">
           <div>
             <h1>Solicitudes de corrección</h1>
             <p>
@@ -1352,28 +1721,108 @@ if (rol === 'EMPLEADO') {
   <main className="dashboard-content">
 
     {seccionEmpleado === 'inicio' && (
-        <div className="page-header">
-            <div>
-              <h1>Bienvenido</h1>
-              <p>Completa tu proceso de ingreso a la empresa.</p>
-            </div>
-          </div>
-        )}
+  <div>
+    <div className="page-header">
+      <div>
+        <h1>
+          Bienvenido{empleado ? `, ${empleado.nombre}` : ''}
+        </h1>
+        <p>
+          Consulta y completa tu proceso de ingreso a la empresa.
+        </p>
+      </div>
+    </div>
 
-       {seccionEmpleado === 'datos' && (
-        <div>
+    <div className="dashboard-summary">
 
-      {empleado ? (
-          <div className="employee-profile-card">
+      <div className="summary-card">
+        <span className="summary-label">Mis datos</span>
+        <strong className="summary-icon">👤</strong>
+        <p>
+          Verifica la información registrada por Recursos Humanos.
+        </p>
 
-            <div className="profile-header">
-              <h2>Mis datos</h2>
-              <p>Verifica que tu información registrada sea correcta.</p>
-            </div>
+        <button
+          className="summary-link"
+          onClick={() => setSeccionEmpleado('datos')}
+        >
+          Ver mis datos
+        </button>
+      </div>
 
+      <div className="summary-card">
+        <span className="summary-label">Documentos</span>
+        <strong className="summary-icon">📄</strong>
+        <p>
+          Carga los documentos requeridos para completar tu expediente.
+        </p>
 
-            <div className="profile-grid">
+        <button
+          className="summary-link"
+          onClick={() => {
+            setSeccionEmpleado('documentos')
+            cargarDocumentos()
+          }}
+        >
+          Ir a documentos
+        </button>
+      </div>
 
+      <div className="summary-card">
+        <span className="summary-label">Seguimiento</span>
+
+        <strong className="summary-number">
+          {
+            documentosRequeridos.filter((documentoRequerido) => {
+              const documentoGuardado = documentos.find(
+                (documento) =>
+                  documento.tipo_documento === documentoRequerido.tipo
+              )
+
+              return (
+                documentoGuardado?.estado === 'VALIDADO' ||
+                documentoGuardado?.estado === 'NO APLICA'
+              )
+            }).length
+          }/{documentosRequeridos.length}
+        </strong>
+
+        <p>Documentos resueltos de tu expediente.</p>
+
+        <button
+          className="summary-link"
+          onClick={() => {
+            setSeccionEmpleado('seguimiento')
+            cargarDocumentos()
+          }}
+        >
+          Ver seguimiento
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
+
+      {seccionEmpleado === 'datos' && (
+  <div>
+
+    <button
+      className="secondary-button back-button"
+      onClick={() => setSeccionEmpleado('inicio')}
+    >
+      ← Volver al inicio
+    </button>
+
+    {empleado ? (
+      <div className="employee-profile-card">
+
+        <div className="profile-header">
+          <h2>Mis datos</h2>
+          <p>Verifica que tu información registrada sea correcta.</p>
+        </div>
+
+        <div className="profile-grid">
           <p>
             <strong>Nombre:</strong>{' '}
             {empleado.nombre} {empleado.apellido_paterno} {empleado.apellido_materno}
@@ -1394,96 +1843,100 @@ if (rol === 'EMPLEADO') {
           <p>
             <strong>Fecha de ingreso:</strong> {empleado.fecha_ingreso}
           </p>
+        </div>
+
+        {mensajeCorreccion && (
+          <p>{mensajeCorreccion}</p>
+        )}
+
+        <button
+          className="secondary-button"
+          onClick={() => setMostrarCorreccion(true)}
+        >
+          Solicitar corrección
+        </button>
+
+        {mostrarCorreccion && (
+          <div className="correction-form-card">
+            <h3>Solicitud de corrección</h3>
+
+            <p>
+              Puedes solicitar una corrección en tu nombre o apellidos.
+              Recursos Humanos revisará tu solicitud.
+            </p>
+
+            <div>
+              <label>Nombre corregido</label>
+              <input
+                type="text"
+                value={nombreSolicitado}
+                onChange={(e) => setNombreSolicitado(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label>Apellido paterno corregido</label>
+              <input
+                type="text"
+                value={apellidoPaternoSolicitado}
+                onChange={(e) => setApellidoPaternoSolicitado(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label>Apellido materno corregido</label>
+              <input
+                type="text"
+                value={apellidoMaternoSolicitado}
+                onChange={(e) => setApellidoMaternoSolicitado(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label>Motivo de la corrección</label>
+              <textarea
+                value={motivoCorreccion}
+                onChange={(e) => setMotivoCorreccion(e.target.value)}
+              />
+            </div>
+
+            <div className="form-actions">
+              <button
+                className="primary-button"
+                onClick={enviarSolicitudCorreccion}
+              >
+                Enviar solicitud
+              </button>
+
+              <button
+                className="secondary-button"
+                onClick={() => setMostrarCorreccion(false)}
+              >
+                Cancelar
+              </button>
+            </div>
 
           </div>
+        )}
 
-          {mensajeCorreccion && (
-          <p>{mensajeCorreccion}</p>
-          )}
-
-          <button
-              className="secondary-button"
-              onClick={() => setMostrarCorreccion(true)}
-            >
-              Solicitar corrección
-          </button>
-
-          {mostrarCorreccion && (
-  <div className="correction-form-card">
-    <h3>Solicitud de corrección</h3>
-
-    <p>
-      Puedes solicitar una corrección en tu nombre o apellidos.
-      Recursos Humanos revisará tu solicitud.
-    </p>
-
-    <div>
-      <label>Nombre corregido</label>
-      <input
-        type="text"
-        value={nombreSolicitado}
-        onChange={(e) => setNombreSolicitado(e.target.value)}
-      />
-    </div>
-
-    <div>
-      <label>Apellido paterno corregido</label>
-      <input
-        type="text"
-        value={apellidoPaternoSolicitado}
-        onChange={(e) => setApellidoPaternoSolicitado(e.target.value)}
-      />
-    </div>
-
-    <div>
-      <label>Apellido materno corregido</label>
-      <input
-        type="text"
-        value={apellidoMaternoSolicitado}
-        onChange={(e) => setApellidoMaternoSolicitado(e.target.value)}
-      />
-    </div>
-
-    <div>
-      <label>Motivo de la corrección</label>
-      <textarea
-        value={motivoCorreccion}
-        onChange={(e) => setMotivoCorreccion(e.target.value)}
-      />
-    </div>
-
-
-    <div className="form-actions">
-      <button
-        className="primary-button"
-        onClick={enviarSolicitudCorreccion}
-      >
-        Enviar solicitud
-      </button>
-
-      <button
-        className="secondary-button"
-        onClick={() => setMostrarCorreccion(false)}
-      >
-        Cancelar
-      </button>
-    </div>
-
+      </div>
+    ) : (
+      <p>Cargando información...</p>
+    )}
 
   </div>
 )}
 
-        </div>
-      ) : (
-        <p>Cargando información...</p>
-      )}
-
-            </div>
-  )}
-
-
 {seccionEmpleado === 'documentos' && (
   <div>
+
+      <button
+      className="secondary-button back-button"
+      onClick={() => setSeccionEmpleado('inicio')}
+    >
+      ← Volver al inicio
+    </button>
+
     <div className="page-header">
       <div>
         <h1>Mis documentos</h1>
@@ -1582,6 +2035,15 @@ if (rol === 'EMPLEADO') {
 
 {seccionEmpleado === 'seguimiento' && (
   <div>
+
+      <button
+          className="secondary-button back-button"
+          onClick={() => setSeccionEmpleado('inicio')}
+        >
+          ← Volver al inicio
+      </button>
+
+
     <div className="page-header">
       <div>
         <h1>Seguimiento de mi expediente</h1>

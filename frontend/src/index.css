@@ -401,7 +401,8 @@ input {
   color: var(--color-text);
 }
 
-.employee-form-grid input {
+.employee-form-grid input,
+.employee-form-grid select {
   width: 100%;
   box-sizing: border-box;
 
@@ -410,11 +411,16 @@ input {
   border: 1px solid var(--color-border);
   border-radius: 7px;
 
+  background-color: white;
+  color: var(--color-text);
+
+  font-family: inherit;
   font-size: 14px;
   outline: none;
 }
 
-.employee-form-grid input:focus {
+.employee-form-grid input:focus,
+.employee-form-grid select:focus {
   border-color: var(--color-primary);
 }
 /* ===== ACCIONES DEL FORMULARIO ===== */
@@ -558,4 +564,175 @@ input {
 .correction-form-card input:focus,
 .correction-form-card textarea:focus {
   border-color: var(--color-primary);
+}
+/* ===== CATÁLOGOS ===== */
+
+.catalog-card {
+  margin-bottom: 25px;
+  padding: 25px;
+
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.catalog-card h2 {
+  margin: 0 0 18px;
+  font-size: 20px;
+  color: var(--color-text);
+}
+
+/* ===== FORMULARIO DE CATÁLOGOS ===== */
+
+.catalog-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin-bottom: 22px;
+}
+
+.catalog-form input {
+  flex: 1;
+
+  padding: 11px 12px;
+
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+
+  font-family: inherit;
+  font-size: 14px;
+
+  outline: none;
+}
+
+.catalog-form input:focus {
+  border-color: var(--color-primary);
+}
+
+/* ===== ELEMENTOS DEL CATÁLOGO ===== */
+
+.catalog-card .documents-list {
+  margin-top: 10px;
+}
+
+.catalog-card .document-row {
+  padding: 15px 5px;
+}
+
+.catalog-card .document-row strong {
+  font-size: 14px;
+  color: var(--color-text);
+}
+/* ===== INICIO / RESUMEN RH ===== */
+
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.summary-card {
+  min-height: 190px;
+  padding: 24px;
+
+  display: flex;
+  flex-direction: column;
+
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.summary-label {
+  margin-bottom: 15px;
+
+  color: var(--color-text-light);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.summary-number {
+  margin-bottom: 10px;
+
+  color: var(--color-primary);
+  font-size: 38px;
+  line-height: 1;
+}
+
+.summary-icon {
+  margin-bottom: 8px;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.summary-card p {
+  margin: 0 0 18px;
+
+  color: var(--color-text-light);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.summary-link {
+  margin-top: auto;
+  padding: 0;
+
+  align-self: flex-start;
+
+  background: transparent;
+  border: none;
+
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.summary-link:hover {
+  text-decoration: underline;
+}
+
+/* ===== ACCIONES RÁPIDAS ===== */
+
+.quick-actions-card {
+  padding: 25px;
+
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.quick-actions-card h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.quick-actions-card > p {
+  margin: 0 0 20px;
+  color: var(--color-text-light);
+  font-size: 14px;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ===== ADAPTACIÓN A PANTALLAS PEQUEÑAS ===== */
+
+@media (max-width: 900px) {
+  .dashboard-summary {
+    grid-template-columns: 1fr;
+  }
+}
+.back-button {
+  margin-bottom: 20px;
 }
