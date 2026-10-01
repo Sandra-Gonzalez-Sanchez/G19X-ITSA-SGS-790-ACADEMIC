@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Boolean
 from database.database import Base
 
 
@@ -27,4 +27,14 @@ class Usuario(Base):
         Boolean,
         default=True,
         nullable=False
+    )
+
+    token_recuperacion = Column(
+        String(255),
+        nullable=True
+    )
+
+    token_recuperacion_expira = Column(
+        DateTime(timezone=True),
+        nullable=True
     )

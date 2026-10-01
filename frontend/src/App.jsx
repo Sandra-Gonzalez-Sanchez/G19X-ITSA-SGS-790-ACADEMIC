@@ -3,6 +3,23 @@ import './App.css'
 function App() {
   const [correo, setCorreo] = useState('')
   const [password, setPassword] = useState('')
+  const [mensajeLogin, setMensajeLogin] = useState('')
+  const rutaActual = window.location.pathname
+const [mostrarRecuperacion, setMostrarRecuperacion] = useState(false)
+const [correoRecuperacion, setCorreoRecuperacion] = useState('')
+const [mensajeRecuperacion, setMensajeRecuperacion] = useState('')
+const [enlaceRecuperacion, setEnlaceRecuperacion] = useState('')
+
+const [esRestablecimiento, setEsRestablecimiento] = useState(
+  rutaActual.startsWith('/restablecer-password/')
+)
+
+const tokenRecuperacion = rutaActual.startsWith('/restablecer-password/')
+  ? rutaActual.split('/restablecer-password/')[1]
+  : null
+
+const [passwordRestablecida, setPasswordRestablecida] = useState('')
+const [confirmarPasswordRestablecida, setConfirmarPasswordRestablecida] = useState('')
  const [rol, setRol] = useState(() => {
   return localStorage.getItem('rol')
   })
@@ -27,7 +44,6 @@ const [nombreNuevaArea, setNombreNuevaArea] = useState('')
 const [nombreNuevoPuesto, setNombreNuevoPuesto] = useState('')
 const [seccionRH, setSeccionRH] = useState('empleados')
 const [seccionEmpleado, setSeccionEmpleado] = useState('inicio')
-const rutaActual = window.location.pathname
 const esInvitacion = rutaActual.startsWith('/invitacion/')
 const tokenInvitacion = esInvitacion
   ? rutaActual.split('/invitacion/')[1]
@@ -103,6 +119,9 @@ const documentosRequeridos = [
   const iniciarSesion = async (e) => {
   e.preventDefault()
 
+  setMensajeLogin('')
+
+ console.log("🚨 SE EJECUTÓ iniciarSesion")
   try {
     const respuesta = await fetch(
       'http://127.0.0.1:8001/usuarios/login',
@@ -136,7 +155,7 @@ const documentosRequeridos = [
       console.log('Inicio de sesión correcto')
       console.log('Rol:', datos.rol)
     } else {
-      console.error(datos.detail)
+      setMensajeLogin(datos.detail || 'Correo o contraseña incorrectos')
     }
 
   } catch (error) {
@@ -170,6 +189,7 @@ const cargarPerfilEmpleado = async (token) => {
 }
 
 const subirDocumento = async () => {
+    console.log('🚨 SE EJECUTÓ subirDocumento')
   if (!archivoSeleccionado || !tipoDocumentoSeleccionado) {
     setMensajeDocumento('Selecciona un archivo PDF.')
     return
@@ -203,7 +223,17 @@ const subirDocumento = async () => {
     return
   }
 
-  setMensajeDocumento('Documento cargado correctamente.')
+  if (datos.estado === 'EN REVISION') {
+    setMensajeDocumento(
+      datos.motivo_revision ||
+      'El documento requiere revisión por parte de Recursos Humanos.'
+    )
+  } else {
+    setMensajeDocumento(
+      datos.mensaje || 'Documento cargado correctamente.'
+    )
+  }
+
   setArchivoSeleccionado(null)
   setTipoDocumentoSeleccionado('')
   await cargarDocumentos()
@@ -212,7 +242,6 @@ const subirDocumento = async () => {
     datos.detail || 'No fue posible cargar el documento.'
   )
 }
-
   } catch (error) {
     console.error('Error al subir documento:', error)
     setMensajeDocumento('No fue posible conectar con el servidor.')
@@ -244,6 +273,36 @@ const cargarDocumentos = async () => {
 
   } catch (error) {
     console.error('Error al consultar documentos:', error)
+  }
+}
+
+const verDocumento = async (documentoId) => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/documentos/archivo/${documentoId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    if (!respuesta.ok) {
+      const datos = await respuesta.json()
+      alert(datos.detail || 'No fue posible abrir el documento.')
+      return
+    }
+
+    const archivo = await respuesta.blob()
+    const urlArchivo = URL.createObjectURL(archivo)
+
+    window.open(urlArchivo, '_blank')
+  } catch (error) {
+    console.error('Error al visualizar documento:', error)
+    alert('No fue posible abrir el documento.')
   }
 }
 
@@ -747,8 +806,9 @@ useEffect(() => {
   }
 
   if (rol === 'EMPLEADO') {
-    cargarPerfilEmpleado(token)
-  }
+  cargarPerfilEmpleado(token)
+  cargarDocumentos()
+    }
 }, [rol])
 
 useEffect(() => {
@@ -804,10 +864,124 @@ const crearPasswordEmpleado = async () => {
   }
 }
 
+const restablecerPassword = async () => {
+
+  if (!passwordRestablecida || !confirmarPasswordRestablecida) {
+    alert('Completa ambos campos de contraseña.')
+    return
+  }
+
+  if (passwordRestablecida !== confirmarPasswordRestablecida) {
+    alert('Las contraseñas no coinciden.')
+    return
+  }
+
+  const passwordValida =
+    passwordRestablecida.length >= 8 &&
+    /[A-Z]/.test(passwordRestablecida) &&
+    /[a-z]/.test(passwordRestablecida) &&
+    /[0-9]/.test(passwordRestablecida) &&
+    /[@#$%&!]/.test(passwordRestablecida) &&
+    !/\s/.test(passwordRestablecida)
+
+  if (!passwordValida) {
+    alert(
+      'La contraseña debe tener mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial.'
+    )
+    return
+  }
+
+  try {
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/usuarios/restablecer-password/${tokenRecuperacion}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          password: passwordRestablecida
+        })
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      alert('Contraseña actualizada correctamente.')
+
+      window.location.href = '/'
+    } else {
+      alert(
+        datos.detail ||
+        'No fue posible actualizar la contraseña.'
+      )
+    }
+
+  } catch (error) {
+    console.error('Error al restablecer contraseña:', error)
+
+    alert('No fue posible conectar con el servidor.')
+  }
+}
+
 const cerrarSesion = () => {
   localStorage.removeItem('access_token')
   localStorage.removeItem('rol')
   setRol(null)
+}
+
+if (esRestablecimiento) {
+  return (
+    <div className="login-page">
+
+      <div className="login-card">
+
+        <h1>Restablecer contraseña</h1>
+
+        <p>
+          Crea una nueva contraseña para tu cuenta.
+        </p>
+
+        <div>
+          <label>Nueva contraseña</label>
+
+          <input
+            type="password"
+            placeholder="Nueva contraseña"
+            value={passwordRestablecida}
+            onChange={(e) =>
+              setPasswordRestablecida(e.target.value)
+            }
+          />
+        </div>
+
+        <div>
+          <label>Confirmar contraseña</label>
+
+          <input
+            type="password"
+            placeholder="Confirma tu contraseña"
+            value={confirmarPasswordRestablecida}
+            onChange={(e) =>
+              setConfirmarPasswordRestablecida(e.target.value)
+            }
+          />
+        </div>
+
+        <p>
+          Mínimo 8 caracteres, mayúscula, minúscula,
+          número y carácter especial.
+        </p>
+
+        <button onClick={restablecerPassword}>
+          Cambiar contraseña
+        </button>
+
+      </div>
+
+    </div>
+  )
 }
 
 if (esInvitacion) {
@@ -1487,72 +1661,46 @@ if (rol === 'RH') {
           <strong>Motivo de revisión:</strong>
         </p>
 
-        {documento.motivos_revision.map((motivo, index) => (
-          <div key={index}>
-            {motivo.campo === 'NOMBRE_EMPLEADO' ? (
-              <p>
-                El nombre detectado en el documento no coincide con el
-                nombre registrado del empleado.
-                <br />
-                <strong>Registrado:</strong> {motivo.valor_origen}
-                <br />
-                <strong>Detectado:</strong> {motivo.valor_comparado}
-              </p>
-            ) : (
-              <p>
-                <strong>{motivo.campo}:</strong>{' '}
-                {motivo.resultado}
-              </p>
-            )}
-          </div>
+        {documento.motivos_revision.slice(0, 1).map((motivo, index) => (
+        <div key={index}>
+  {motivo.motivo ? (
+    <p>{motivo.motivo}</p>
+  ) : motivo.campo === 'NOMBRE_EMPLEADO' ? (
+    <p>
+      El nombre detectado en el documento no coincide con el
+      nombre registrado del empleado.
+      <br />
+      <strong>Registrado:</strong> {motivo.valor_origen}
+      <br />
+      <strong>Detectado:</strong> {motivo.valor_comparado}
+    </p>
+  ) : (
+    <p>
+      <strong>{motivo.campo}:</strong>{' '}
+      {motivo.resultado}
+    </p>
+  )}
+</div>
         ))}
       </div>
     )}
 </div>
 
-              <div className="document-actions">
+        <div className="document-actions">
 
   <span className="status status-pending">
     {documento.estado}
   </span>
 
-  {documento.estado === 'EN REVISION' && (
-    <>
-      <button
-        className="primary-button"
-        onClick={() =>
-          cambiarEstadoDocumento(documento.id, 'aprobar')
-        }
-      >
-        Aprobar
-      </button>
-
-      <button
-        className="secondary-button"
-        onClick={() =>
-          cambiarEstadoDocumento(
-            documento.id,
-            'solicitar-correccion'
-          )
-        }
-      >
-        Solicitar corrección
-      </button>
-    </>
+  {documento.estado !== 'NO APLICA' && (
+    <button
+      className="secondary-button"
+      onClick={() => verDocumento(documento.id)}
+    >
+      Ver documento
+    </button>
   )}
 
-  {documento.tipo_documento === 'SEGURIDAD_SOCIAL' &&
-    documento.estado !== 'VALIDADO' &&
-    documento.estado !== 'NO APLICA' && (
-      <button
-        className="secondary-button"
-        onClick={() =>
-          cambiarEstadoDocumento(documento.id, 'no-aplica')
-        }
-      >
-        No aplicas
-      </button>
-  )}
 
 </div>
 
@@ -1975,12 +2123,33 @@ if (rol === 'EMPLEADO') {
       <div>
         <strong>{documentoRequerido.nombre}</strong>
         <p>{documentoRequerido.descripcion}</p>
+        {documentoGuardado?.estado === 'EN REVISION' &&
+  documentoGuardado?.motivos_revision?.length > 0 && (
+    <div className="document-review-message">
+      <strong>Motivo de revisión:</strong>
+
+      <p>
+      {documentoGuardado.motivos_revision[0]?.motivo ||
+        'Se detectó una inconsistencia en los datos del documento.'}
+      </p>
+    </div>
+)}
       </div>
 
       <div className="document-actions">
         <span className="status status-pending">
           {documentoGuardado?.estado || 'PENDIENTE'}
         </span>
+
+        {documentoGuardado &&
+          documentoGuardado.estado !== 'NO APLICA' && (
+            <button
+              className="secondary-button"
+              onClick={() => verDocumento(documentoGuardado.id)}
+            >
+              Ver documento
+            </button>
+        )}
 
         {documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
   documentoGuardado?.estado !== 'NO APLICA' && (
@@ -2089,19 +2258,36 @@ if (rol === 'EMPLEADO') {
               <div>
                 <strong>{documentoRequerido.nombre}</strong>
 
-                <p>
-                  {estado === 'VALIDADO' &&
-                    'Documento validado correctamente.'}
+                <div>
+  {estado === 'VALIDADO' && (
+    <p>Documento validado correctamente.</p>
+  )}
 
-                  {estado === 'EN REVISION' &&
-                    'El documento está siendo revisado.'}
+  {estado === 'EN REVISION' && (
+    <>
+      <p>El documento requiere revisión.</p>
 
-                  {estado === 'PENDIENTE' &&
-                    'Documento pendiente de completar.'}
+      {documentoGuardado?.motivos_revision?.length > 0 && (
+        <div className="document-review-message">
+          <strong>Motivo de revisión:</strong>
 
-                  {estado === 'NO APLICA' &&
-                    'Este documento no es requerido para tu expediente.'}
-                </p>
+          <p>
+          {documentoGuardado.motivos_revision[0]?.motivo ||
+            'Se detectó una inconsistencia en los datos del documento.'}
+          </p>
+        </div>
+      )}
+    </>
+  )}
+
+  {estado === 'PENDIENTE' && (
+    <p>Documento pendiente de completar.</p>
+  )}
+
+  {estado === 'NO APLICA' && (
+    <p>Este documento no es requerido para tu expediente.</p>
+  )}
+</div>
               </div>
 
               <div className="document-actions">

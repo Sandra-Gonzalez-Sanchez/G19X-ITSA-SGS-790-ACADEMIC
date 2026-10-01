@@ -22,3 +22,14 @@ class Validacion(Base):
     valor_comparado = Column(String(255), nullable=True)
 
     resultado = Column(String(50), nullable=False)
+
+    origen_validacion = Column(
+        String(20),
+        nullable=False,
+        default="REGLA"
+    )
+
+    motivo = Column(
+        String(500),
+        nullable=True
+    )

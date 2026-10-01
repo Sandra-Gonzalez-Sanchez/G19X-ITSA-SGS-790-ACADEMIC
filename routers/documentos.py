@@ -1,6 +1,7 @@
 import os
 import shutil
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 
@@ -17,6 +18,7 @@ from services.validacion_service import (
     comparar_curp,
     validar_tipo_documento
 )
+from services.ia_validacion import validar_documento_con_ia
 
 
 
@@ -33,7 +35,9 @@ def guardar_validacion(
     documento_comparado,
     valor_origen,
     valor_comparado,
-    resultado
+    resultado,
+    origen_validacion="REGLA",
+    motivo=None
 ):
     validacion = db.query(Validacion).filter(
         Validacion.empleado_id == empleado_id,
@@ -46,6 +50,8 @@ def guardar_validacion(
         validacion.valor_origen = valor_origen
         validacion.valor_comparado = valor_comparado
         validacion.resultado = resultado
+        validacion.origen_validacion = origen_validacion
+        validacion.motivo = motivo
 
     else:
         validacion = Validacion(
@@ -55,7 +61,9 @@ def guardar_validacion(
             documento_comparado=documento_comparado,
             valor_origen=valor_origen,
             valor_comparado=valor_comparado,
-            resultado=resultado
+            resultado=resultado,
+            origen_validacion = origen_validacion,
+            motivo = motivo
         )
 
         db.add(validacion)
@@ -153,7 +161,7 @@ def subir_documento(
     if archivo.content_type != "application/pdf":
         raise HTTPException(
             status_code=400,
-            detail="Solo se permiten archivos PDF"
+            detail="El archivo tiene que estar en formato PDF"
         )
 
 
@@ -536,9 +544,79 @@ def subir_documento(
     if not datos_esenciales_correctos:
         requiere_revision = True
 
+
+    db.query(Validacion).filter(
+Validacion.empleado_id == empleado.id,
+        Validacion.documento_origen == tipo_documento,
+        Validacion.origen_validacion == "IA"
+    ).delete(synchronize_session=False)
+
+    db.commit()
+
     validaciones_documento = db.query(Validacion).filter(
         Validacion.empleado_id == empleado.id
     ).all()
+
+    validaciones_para_ia = []
+
+    for validacion in validaciones_documento:
+        participa_documento = (
+                validacion.documento_origen == tipo_documento or
+                validacion.documento_comparado == tipo_documento
+        )
+
+        if participa_documento:
+            validaciones_para_ia.append({
+                "campo": validacion.campo,
+                "valor_origen": validacion.valor_origen,
+                "valor_comparado": validacion.valor_comparado
+            })
+
+    datos_para_ia = {
+        "nombre": datos_documento.nombre if datos_documento else None,
+        "fecha_nacimiento": datos_documento.fecha_nacimiento if datos_documento else None,
+        "curp": datos_documento.curp if datos_documento else None,
+        "rfc": datos_documento.rfc if datos_documento else None,
+        "domicilio": datos_documento.domicilio if datos_documento else None,
+        "clabe": datos_documento.clabe if datos_documento else None,
+        "nss": datos_documento.nss if datos_documento else None
+    }
+
+    resultado_ia = validar_documento_con_ia(
+        tipo_documento=tipo_documento,
+        datos_extraidos=datos_para_ia,
+        nombre_empleado=nombre_empleado,
+        validaciones=validaciones_para_ia
+    )
+
+    print("VALIDACIÓN DOCUMENTAL MEDIANTE IA:")
+    print(resultado_ia)
+
+    for inconsistencia in resultado_ia.get("inconsistencias", []):
+        campo_ia = inconsistencia.get("campo", "DESCONOCIDO")
+        valor_documento_ia = inconsistencia.get("valor_documento")
+        valor_referencia_ia = inconsistencia.get("valor_referencia")
+        motivo_ia = inconsistencia.get(
+            "motivo",
+            "La inteligencia artificial detectó una inconsistencia."
+        )
+
+        guardar_validacion(
+            db=db,
+            empleado_id=empleado.id,
+            campo=campo_ia,
+            documento_origen=tipo_documento,
+            documento_comparado="REFERENCIA",
+            valor_origen=valor_documento_ia,
+            valor_comparado=valor_referencia_ia,
+            resultado="INCONSISTENTE",
+            origen_validacion="IA",
+            motivo=motivo_ia
+        )
+
+    if resultado_ia["requiere_revision"]:
+        requiere_revision = True
+
 
     for validacion in validaciones_documento:
         participa_documento = (
@@ -557,13 +635,40 @@ def subir_documento(
     db.commit()
     db.refresh(documento)
 
+    mensaje_revision = None
+
+    if resultado_ia["requiere_revision"]:
+        inconsistencias_ia = resultado_ia.get("inconsistencias", [])
+
+        if inconsistencias_ia:
+            motivos = [
+                inconsistencia.get(
+                    "motivo",
+                    "Se detectó una inconsistencia en los datos del documento."
+                )
+                for inconsistencia in inconsistencias_ia
+            ]
+
+            motivos = list(dict.fromkeys(motivos))
+            mensaje_revision = " ".join(motivos)
+
+        elif not resultado_ia["disponible"]:
+            mensaje_revision = (
+                "No fue posible completar la validación mediante inteligencia "
+                "artificial. El documento será revisado por Recursos Humanos."
+            )
 
     return {
-        "mensaje": "Documento guardado correctamente",
+        "mensaje": (
+            "Documento validado correctamente."
+            if documento.estado == "VALIDADO"
+            else "El documento requiere revisión."
+        ),
         "empleado_id": empleado.id,
         "tipo_documento": tipo_documento,
         "archivo": archivo.filename,
-        "estado": documento.estado
+        "estado": documento.estado,
+        "motivo_revision": mensaje_revision
     }
 
 @router.put("/{documento_id}/aprobar")
@@ -695,6 +800,7 @@ def obtener_expediente_empleado(
             DatoExtraido.documento_id == documento.id
         ).first()
 
+
         validaciones_documento = db.query(Validacion).filter(
             Validacion.empleado_id == empleado_id
         ).all()
@@ -714,7 +820,9 @@ def obtener_expediente_empleado(
                     "documento_comparado": validacion.documento_comparado,
                     "valor_origen": validacion.valor_origen,
                     "valor_comparado": validacion.valor_comparado,
-                    "resultado": validacion.resultado
+                    "resultado": validacion.resultado,
+                    "motivo": validacion.motivo,
+                    "origen_validacion": validacion.origen_validacion
                 })
 
         documentos_expediente.append({
@@ -748,6 +856,56 @@ def obtener_expediente_empleado(
         "documentos": documentos_expediente
     }
 
+@router.get("/archivo/{documento_id}")
+def ver_mi_documento(
+    documento_id: int,
+    db: Session = Depends(get_db),
+    datos_empleado: dict = Depends(verificar_empleado)
+):
+    usuario_id = int(datos_empleado.get("sub"))
+
+
+    empleado = db.query(Empleado).filter(
+        Empleado.usuario_id == usuario_id
+    ).first()
+
+    if not empleado:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontró información del empleado"
+        )
+
+    documento = db.query(Documento).filter(
+        Documento.id == documento_id,
+        Documento.empleado_id == empleado.id
+    ).first()
+
+    if not documento:
+        raise HTTPException(
+            status_code=404,
+            detail="Documento no encontrado"
+        )
+
+    if documento.estado == "NO APLICA" or documento.ruta_archivo == "NO_APLICA":
+        raise HTTPException(
+            status_code=400,
+            detail="Este documento no cuenta con un archivo PDF."
+        )
+
+
+    if not os.path.isfile(documento.ruta_archivo):
+        raise HTTPException(
+            status_code=404,
+            detail="El archivo PDF no fue encontrado."
+        )
+
+    return FileResponse(
+        path=documento.ruta_archivo,
+        media_type="application/pdf",
+        filename=os.path.basename(documento.ruta_archivo),
+        content_disposition_type="inline"
+    )
+
 @router.get("/mis-documentos")
 def obtener_mis_documentos(
     db: Session = Depends(get_db),
@@ -771,7 +929,38 @@ def obtener_mis_documentos(
         Documento.empleado_id == empleado.id
     ).all()
 
-    return documentos
+    documentos_respuesta = []
+
+    for documento in documentos:
+        validaciones_documento = db.query(Validacion).filter(
+            Validacion.empleado_id == empleado.id,
+            Validacion.documento_origen == documento.tipo_documento,
+            Validacion.origen_validacion == "IA",
+            Validacion.resultado == "INCONSISTENTE"
+        ).all()
+
+        motivos_revision = []
+
+        for validacion in validaciones_documento:
+            motivos_revision.append({
+                "campo": validacion.campo,
+                "motivo": validacion.motivo,
+                "valor_documento": validacion.valor_origen,
+                "valor_referencia": validacion.valor_comparado,
+                "origen_validacion": validacion.origen_validacion
+            })
+
+        documentos_respuesta.append({
+            "id": documento.id,
+            "tipo_documento": documento.tipo_documento,
+            "estado": documento.estado,
+            "fecha_carga": documento.fecha_carga,
+            "motivos_revision": motivos_revision
+        })
+
+    return documentos_respuesta
+
+
 
 @router.put("/empleado/seguridad-social/no-aplica")
 def marcar_seguridad_social_no_aplica(

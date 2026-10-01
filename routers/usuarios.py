@@ -1,10 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pwdlib import PasswordHash
-
+import secrets
+from datetime import datetime, timedelta, timezone
 from database.database import get_db
 from models.usuario import Usuario
-from schemas.usuario import UsuarioCreate, LoginRequest
+from schemas.usuario import (
+    UsuarioCreate,
+    LoginRequest,
+    SolicitudRecuperacion,
+    RestablecerPassword
+)
 from services.seguridad import validar_password, crear_token
 
 
@@ -97,4 +103,85 @@ def iniciar_sesion(
         "usuario_id": usuario.id,
         "correo": usuario.correo,
         "rol": usuario.rol
+    }
+
+@router.post("/recuperar-password")
+def solicitar_recuperacion(
+    datos: SolicitudRecuperacion,
+    db: Session = Depends(get_db)
+):
+    usuario = db.query(Usuario).filter(
+        Usuario.correo == datos.correo
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="No existe una cuenta registrada con este correo"
+        )
+
+    token = secrets.token_urlsafe(32)
+
+    usuario.token_recuperacion = token
+    usuario.token_recuperacion_expira = (
+        datetime.now(timezone.utc) + timedelta(hours=1)
+    )
+
+    db.commit()
+
+    enlace = (
+        f"http://localhost:5173/restablecer-password/{token}"
+    )
+
+    print("ENLACE DE RECUPERACIÓN:")
+    print(enlace)
+
+    return {
+        "mensaje": "Se generó el enlace de recuperación correctamente",
+        "enlace": enlace
+    }
+
+@router.post("/restablecer-password/{token}")
+def restablecer_password(
+    token: str,
+    datos: RestablecerPassword,
+    db: Session = Depends(get_db)
+):
+    usuario = db.query(Usuario).filter(
+        Usuario.token_recuperacion == token
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="El enlace de recuperación no es válido"
+        )
+
+    if not usuario.token_recuperacion_expira:
+        raise HTTPException(
+            status_code=400,
+            detail="El enlace de recuperación no es válido"
+        )
+
+    fecha_actual = datetime.now(timezone.utc)
+
+    if fecha_actual > usuario.token_recuperacion_expira:
+        raise HTTPException(
+            status_code=400,
+            detail="El enlace de recuperación ha expirado"
+        )
+
+    validar_password(datos.password)
+
+    usuario.password_hash = password_hash.hash(
+        datos.password
+    )
+
+    usuario.token_recuperacion = None
+    usuario.token_recuperacion_expira = None
+
+    db.commit()
+
+    return {
+        "mensaje": "Contraseña actualizada correctamente"
     }

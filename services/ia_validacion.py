@@ -4,7 +4,7 @@ import urllib.error
 
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-MODELO_IA = "gemma3:1b"
+MODELO_IA = "qwen3:4b-instruct"
 
 
 def validar_documento_con_ia(
@@ -31,7 +31,7 @@ def validar_documento_con_ia(
         })
 
     # Agregamos las comparaciones que el sistema ya pudo construir
-    # entre documentos, pero Gemma realizará el análisis.
+    # entre documentos para que la IA realice el análisis.
     for validacion in validaciones:
         campo = validacion.get("campo")
         valor_origen = validacion.get("valor_origen")
@@ -71,11 +71,21 @@ REGLAS OBLIGATORIAS:
 - Nunca relaciones campos diferentes.
 - No inventes datos.
 - No cambies el significado de los valores.
-- Si ambos valores de una comparación representan el mismo dato,
-  considera esa comparación consistente.
-- Si representan datos diferentes, marca esa comparación como inconsistente.
-- Diferencias únicamente de mayúsculas, minúsculas o acentos no deben
-  considerarse una inconsistencia.
+- Para campos de identidad como NOMBRE, CURP, RFC o FECHA_NACIMIENTO,
+  la comparación debe ser estricta.
+- En el campo NOMBRE, todos los nombres y apellidos deben coincidir.
+- Si cambia, falta o se agrega un nombre o apellido, la comparación es INCONSISTENTE.
+- Ejemplo: "JUAN PEREZ GARCIA" y "JUAN PEREZ LOPEZ" son INCONSISTENTES,
+  porque GARCIA y LOPEZ son apellidos diferentes.
+- Ejemplo: "JUAN PEREZ LOPEZ" y "JUAN PEREZ LOPEZ" son CONSISTENTES.
+- En CURP y RFC, cualquier carácter diferente representa una inconsistencia.
+- En fechas, ambas fechas deben representar exactamente la misma fecha.
+- Puedes ignorar únicamente diferencias de mayúsculas, minúsculas,
+  acentos y espacios adicionales.
+- No consideres dos valores consistentes solamente porque son parecidos.
+- Ante una diferencia real entre valor_documento y valor_referencia,
+  debes incluirla obligatoriamente en "inconsistencias" y establecer
+  "requiere_revision": true.
 - No determines autenticidad, falsificación ni validez legal del documento.
 
 INFORMACIÓN:
@@ -134,7 +144,7 @@ Si detectas una inconsistencia:
     try:
         with urllib.request.urlopen(
             solicitud,
-            timeout=60
+            timeout=180
         ) as respuesta:
             resultado_ollama = json.loads(
                 respuesta.read().decode("utf-8")
