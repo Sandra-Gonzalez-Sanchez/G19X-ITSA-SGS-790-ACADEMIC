@@ -115,6 +115,45 @@ const documentosRequeridos = [
   }
 ]
 
+const solicitarRecuperacion = async () => {
+  if (!correoRecuperacion.trim()) {
+    setMensajeRecuperacion('Ingresa tu correo electrónico.')
+    return
+  }
+
+  try {
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/usuarios/recuperar-password',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          correo: correoRecuperacion
+        })
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setMensajeRecuperacion(datos.mensaje)
+      setEnlaceRecuperacion(datos.enlace)
+    } else {
+      setMensajeRecuperacion(
+        datos.detail || 'No fue posible solicitar la recuperación.'
+      )
+    }
+
+  } catch (error) {
+    console.error('Error al solicitar recuperación:', error)
+    setMensajeRecuperacion(
+      'No fue posible conectar con el servidor.'
+    )
+  }
+}
+
 
   const iniciarSesion = async (e) => {
   e.preventDefault()
@@ -224,10 +263,10 @@ const subirDocumento = async () => {
   }
 
   if (datos.estado === 'EN REVISION') {
-    setMensajeDocumento(
-      datos.motivo_revision ||
-      'El documento requiere revisión por parte de Recursos Humanos.'
-    )
+  setMensajeDocumento(
+    datos.motivo_revision ||
+    'El documento requiere corrección.'
+  )
   } else {
     setMensajeDocumento(
       datos.mensaje || 'Documento cargado correctamente.'
@@ -277,6 +316,9 @@ const cargarDocumentos = async () => {
 }
 
 const verDocumento = async (documentoId) => {
+    console.log("🚨 VER DOCUMENTO EJECUTADO");
+console.log("ID:", documentoId);
+console.log("ROL:", localStorage.getItem('rol'));
   try {
     const token = localStorage.getItem('access_token')
 
@@ -1655,35 +1697,16 @@ if (rol === 'RH') {
   </strong>
 
   {documento.estado === 'EN REVISION' &&
-    documento.motivos_revision?.length > 0 && (
-      <div>
-        <p>
-          <strong>Motivo de revisión:</strong>
-        </p>
+  documento.motivo_revision && (
+    <div>
+      <p>
+        <strong>Motivo de revisión:</strong>
+      </p>
 
-        {documento.motivos_revision.slice(0, 1).map((motivo, index) => (
-        <div key={index}>
-  {motivo.motivo ? (
-    <p>{motivo.motivo}</p>
-  ) : motivo.campo === 'NOMBRE_EMPLEADO' ? (
-    <p>
-      El nombre detectado en el documento no coincide con el
-      nombre registrado del empleado.
-      <br />
-      <strong>Registrado:</strong> {motivo.valor_origen}
-      <br />
-      <strong>Detectado:</strong> {motivo.valor_comparado}
-    </p>
-  ) : (
-    <p>
-      <strong>{motivo.campo}:</strong>{' '}
-      {motivo.resultado}
-    </p>
-  )}
-</div>
-        ))}
-      </div>
-    )}
+      <p>{documento.motivo_revision}</p>
+    </div>
+)}
+
 </div>
 
         <div className="document-actions">
@@ -2100,10 +2123,6 @@ if (rol === 'EMPLEADO') {
     Los documentos deberán cargarse en formato PDF.
   </p>
 
-  {mensajeDocumento && (
-  <p>{mensajeDocumento}</p>
-   )}
-
   <div className="documents-list">
     {documentosRequeridos.map((documentoRequerido) => {
   const documentoGuardado = documentos.find(
@@ -2123,22 +2142,25 @@ if (rol === 'EMPLEADO') {
       <div>
         <strong>{documentoRequerido.nombre}</strong>
         <p>{documentoRequerido.descripcion}</p>
+
         {documentoGuardado?.estado === 'EN REVISION' &&
-  documentoGuardado?.motivos_revision?.length > 0 && (
+  documentoGuardado?.motivo_revision && (
     <div className="document-review-message">
-      <strong>Motivo de revisión:</strong>
+      <strong>Corrección requerida:</strong>
 
       <p>
-      {documentoGuardado.motivos_revision[0]?.motivo ||
-        'Se detectó una inconsistencia en los datos del documento.'}
+        {documentoGuardado.motivo_revision}
       </p>
     </div>
 )}
+
       </div>
 
       <div className="document-actions">
         <span className="status status-pending">
-          {documentoGuardado?.estado || 'PENDIENTE'}
+          {documentoGuardado?.estado === 'EN REVISION'
+            ? 'CORRECCIÓN REQUERIDA'
+            : documentoGuardado?.estado || 'PENDIENTE'}
         </span>
 
         {documentoGuardado &&
@@ -2152,7 +2174,7 @@ if (rol === 'EMPLEADO') {
         )}
 
         {documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
-  documentoGuardado?.estado !== 'NO APLICA' && (
+  !documentoGuardado && (
     <button
       className="secondary-button"
       onClick={marcarSeguridadSocialNoAplica}
@@ -2161,37 +2183,41 @@ if (rol === 'EMPLEADO') {
     </button>
 )}
 
-        {estaSeleccionado ? (
-          <>
-            <span className="file-name">
-              {archivoSeleccionado.name}
-            </span>
 
-            <button
-              className="primary-button"
-              onClick={subirDocumento}
-            >
-              Subir documento
-            </button>
-          </>
-        ) : (
-          <label className="upload-button">
-            Seleccionar PDF
+        {documentoGuardado?.estado !== 'NO APLICA' && (
+  estaSeleccionado ? (
+    <>
+      <span className="file-name">
+        {archivoSeleccionado.name}
+      </span>
 
-            <input
-              type="file"
-              accept=".pdf,application/pdf"
-              hidden
-              onChange={(e) => {
-                setTipoDocumentoSeleccionado(
-                  documentoRequerido.tipo
-                )
-                setArchivoSeleccionado(e.target.files[0])
-                setMensajeDocumento('')
-              }}
-            />
-          </label>
-        )}
+      <button
+        className="primary-button"
+        onClick={subirDocumento}
+      >
+        Subir documento
+      </button>
+    </>
+  ) : (
+    <label className="upload-button">
+      Seleccionar PDF
+
+      <input
+        type="file"
+        accept=".pdf,application/pdf"
+        hidden
+        onChange={(e) => {
+          setTipoDocumentoSeleccionado(
+            documentoRequerido.tipo
+          )
+          setArchivoSeleccionado(e.target.files[0])
+          setMensajeDocumento('')
+        }}
+      />
+    </label>
+  )
+)}
+
       </div>
     </div>
   )
@@ -2263,22 +2289,26 @@ if (rol === 'EMPLEADO') {
     <p>Documento validado correctamente.</p>
   )}
 
+
   {estado === 'EN REVISION' && (
-    <>
-      <p>El documento requiere revisión.</p>
+  <>
+    <p>El documento requiere corrección.</p>
 
-      {documentoGuardado?.motivos_revision?.length > 0 && (
-        <div className="document-review-message">
-          <strong>Motivo de revisión:</strong>
+    {documentoGuardado?.motivo_revision && (
+  <div className="document-review-message">
+    <strong>Motivo de revisión:</strong>
 
-          <p>
-          {documentoGuardado.motivos_revision[0]?.motivo ||
-            'Se detectó una inconsistencia en los datos del documento.'}
-          </p>
-        </div>
-      )}
-    </>
-  )}
+    <p>
+      {documentoGuardado.motivo_revision}
+    </p>
+  </div>
+)}
+
+
+  </>
+)}
+
+
 
   {estado === 'PENDIENTE' && (
     <p>Documento pendiente de completar.</p>
@@ -2293,7 +2323,7 @@ if (rol === 'EMPLEADO') {
               <div className="document-actions">
                 <span className="status status-pending">
                   {estado === 'EN REVISION'
-                    ? 'EN REVISIÓN'
+                    ? 'CORRECCIÓN REQUERIDA'
                     : estado}
                 </span>
               </div>
@@ -2348,7 +2378,83 @@ if (rol === 'EMPLEADO') {
             Iniciar sesión
           </button>
 
+         {mensajeLogin && (
+          <p className="login-error">
+            {mensajeLogin}
+          </p>
+        )}
+            <button
+          type="button"
+          className="forgot-password-button"
+          onClick={() => {
+            setMostrarRecuperacion(true)
+            setMensajeRecuperacion('')
+            setEnlaceRecuperacion('')
+            setCorreoRecuperacion(correo)
+          }}
+        >
+          ¿Olvidaste tu contraseña?
+        </button>
+
         </form>
+
+            {mostrarRecuperacion && (
+      <div className="recovery-card">
+
+        <h2>Recuperar contraseña</h2>
+
+        <p>
+          Ingresa tu correo electrónico para generar un enlace
+          de recuperación.
+        </p>
+
+        <input
+          type="email"
+          placeholder="correo@ejemplo.com"
+          value={correoRecuperacion}
+          onChange={(e) => setCorreoRecuperacion(e.target.value)}
+        />
+
+        <button
+          type="button"
+          onClick={solicitarRecuperacion}
+        >
+          Generar enlace
+        </button>
+
+        {mensajeRecuperacion && (
+          <p>{mensajeRecuperacion}</p>
+        )}
+
+        {enlaceRecuperacion && (
+          <div>
+            <p>
+              Enlace generado para pruebas:
+            </p>
+
+            <a
+              href={enlaceRecuperacion}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Abrir enlace de recuperación
+            </a>
+          </div>
+        )}
+
+    <button
+      type="button"
+      onClick={() => {
+        setMostrarRecuperacion(false)
+        setMensajeRecuperacion('')
+        setEnlaceRecuperacion('')
+      }}
+    >
+      Cancelar
+    </button>
+
+  </div>
+)}
 
       </div>
 

@@ -71,6 +71,20 @@ def verificar_rh(
         )
     return datos_token
 
+def verificar_acceso_documento(
+    datos_token: dict = Depends(verificar_token)
+):
+    rol = datos_token.get("rol")
+    print("ROL QUE LLEGA AL DOCUMENTO:", rol)
+
+    if rol not in ["EMPLEADO", "RH"]:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permisos para visualizar documentos."
+        )
+
+    return datos_token
+
 def verificar_empleado(
     datos_token: dict = Depends(verificar_token)
 ):

@@ -10,7 +10,11 @@ from models.empleado import Empleado
 from models.documento import Documento
 from models.dato_extraido import DatoExtraido
 from models.validacion import Validacion
-from services.seguridad import verificar_empleado, verificar_rh
+from services.seguridad import (
+    verificar_empleado,
+    verificar_rh,
+    verificar_acceso_documento
+)
 from services.ocr_bridge import ejecutar_ocr
 from services.validacion_service import (
     comparar_nombres,
@@ -119,7 +123,6 @@ def validar_datos_esenciales(tipo_documento, datos):
 
     if tipo_documento == "DOCUMENTO_BANCARIO":
         return bool(
-            datos.nombre and
             datos.clabe and
             datos.clabe.isdigit() and
             len(datos.clabe) == 18
@@ -366,7 +369,11 @@ def subir_documento(
                 documento_comparado="CURP",
                 valor_origen=datos_acta.fecha_nacimiento,
                 valor_comparado=datos_curp.fecha_nacimiento,
-                resultado=resultado_fecha
+                resultado=resultado_fecha,
+                motivo=(
+                    "La fecha de nacimiento no coincide entre "
+                    "ACTA_NACIMIENTO y CURP."
+                ) if resultado_fecha == "NO COINCIDE" else None
             )
 
             print("VALIDACIÓN ACTA ↔ CURP:")
@@ -404,7 +411,11 @@ def subir_documento(
                 documento_comparado="INE",
                 valor_origen=datos_acta.nombre,
                 valor_comparado=datos_ine.nombre,
-                resultado=resultado_nombre
+                resultado=resultado_nombre,
+                motivo=(
+                    "El nombre no coincide entre "
+                    "ACTA_NACIMIENTO e INE."
+                ) if resultado_nombre == "NO COINCIDE" else None
             )
 
             guardar_validacion(
@@ -415,7 +426,11 @@ def subir_documento(
                 documento_comparado="INE",
                 valor_origen=datos_acta.fecha_nacimiento,
                 valor_comparado=datos_ine.fecha_nacimiento,
-                resultado=resultado_fecha
+                resultado=resultado_fecha,
+                motivo=(
+                    "La fecha de nacimiento no coincide entre "
+                    "ACTA_NACIMIENTO y INE."
+                ) if resultado_fecha == "NO COINCIDE" else None
             )
 
             print("VALIDACIÓN ACTA ↔ INE:")
@@ -448,7 +463,11 @@ def subir_documento(
                 documento_comparado="INE",
                 valor_origen=datos_curp.curp,
                 valor_comparado=datos_ine.curp,
-                resultado=resultado_curp
+                resultado=resultado_curp,
+                motivo=(
+                    "La CURP no coincide entre "
+                    "CURP y INE."
+                ) if resultado_curp == "NO COINCIDE" else None
             )
 
             print("VALIDACIÓN CURP ↔ INE:")
@@ -637,26 +656,73 @@ Validacion.empleado_id == empleado.id,
 
     mensaje_revision = None
 
-    if resultado_ia["requiere_revision"]:
-        inconsistencias_ia = resultado_ia.get("inconsistencias", [])
+    motivos = []
 
-        if inconsistencias_ia:
-            motivos = [
-                inconsistencia.get(
-                    "motivo",
-                    "Se detectó una inconsistencia en los datos del documento."
+    # Revisar inconsistencias detectadas por las reglas del sistema
+    for validacion in validaciones_documento:
+
+        participa_documento = (
+                validacion.documento_origen == tipo_documento or
+                validacion.documento_comparado == tipo_documento
+        )
+
+        # Solo considerar diferencias reales
+        if participa_documento and validacion.resultado == "NO COINCIDE":
+
+            if validacion.campo == "NOMBRE":
+                motivos.append(
+                    f"El nombre no coincide entre "
+                    f"{validacion.documento_origen} y "
+                    f"{validacion.documento_comparado}."
                 )
-                for inconsistencia in inconsistencias_ia
-            ]
 
-            motivos = list(dict.fromkeys(motivos))
-            mensaje_revision = " ".join(motivos)
+            elif validacion.campo == "FECHA_NACIMIENTO":
+                motivos.append(
+                    f"La fecha de nacimiento no coincide entre "
+                    f"{validacion.documento_origen} y "
+                    f"{validacion.documento_comparado}."
+                )
 
-        elif not resultado_ia["disponible"]:
-            mensaje_revision = (
-                "No fue posible completar la validación mediante inteligencia "
-                "artificial. El documento será revisado por Recursos Humanos."
+            elif validacion.campo == "CURP":
+                motivos.append(
+                    f"La CURP no coincide entre "
+                    f"{validacion.documento_origen} y "
+                    f"{validacion.documento_comparado}."
+                )
+
+            elif validacion.campo == "NOMBRE_EMPLEADO":
+                motivos.append(
+                    "El nombre del documento no coincide con "
+                    "el nombre registrado del empleado."
+                )
+
+    # Revisar inconsistencias detectadas por IA
+    if resultado_ia.get("requiere_revision"):
+
+        inconsistencias_ia = resultado_ia.get(
+            "inconsistencias",
+            []
+        )
+
+        for inconsistencia in inconsistencias_ia:
+            motivo_ia = inconsistencia.get(
+                "motivo",
+                "La inteligencia artificial detectó una inconsistencia."
             )
+
+            motivos.append(motivo_ia)
+
+    # Quitar mensajes repetidos
+    motivos = list(dict.fromkeys(motivos))
+
+    if motivos:
+        mensaje_revision = " ".join(motivos)
+
+    elif not resultado_ia["disponible"]:
+        mensaje_revision = (
+            "No fue posible completar la validación mediante "
+            "inteligencia artificial."
+        )
 
     return {
         "mensaje": (
@@ -855,43 +921,64 @@ def obtener_expediente_empleado(
         },
         "documentos": documentos_expediente
     }
-
 @router.get("/archivo/{documento_id}")
 def ver_mi_documento(
     documento_id: int,
     db: Session = Depends(get_db),
-    datos_empleado: dict = Depends(verificar_empleado)
+    datos_usuario: dict = Depends(verificar_acceso_documento)
 ):
-    usuario_id = int(datos_empleado.get("sub"))
+    usuario_id = int(datos_usuario.get("sub"))
+    rol = datos_usuario.get("rol")
 
+    # ==========================================================
+    # ACCESO PARA RH
+    # ==========================================================
 
-    empleado = db.query(Empleado).filter(
-        Empleado.usuario_id == usuario_id
-    ).first()
+    if rol == "RH":
 
-    if not empleado:
-        raise HTTPException(
-            status_code=404,
-            detail="No se encontró información del empleado"
-        )
+        documento = db.query(Documento).filter(
+            Documento.id == documento_id
+        ).first()
 
-    documento = db.query(Documento).filter(
-        Documento.id == documento_id,
-        Documento.empleado_id == empleado.id
-    ).first()
+        if not documento:
+            raise HTTPException(
+                status_code=404,
+                detail="Documento no encontrado"
+            )
 
-    if not documento:
-        raise HTTPException(
-            status_code=404,
-            detail="Documento no encontrado"
-        )
+    # ==========================================================
+    # ACCESO PARA EMPLEADO
+    # ==========================================================
+
+    else:
+
+        empleado = db.query(Empleado).filter(
+            Empleado.usuario_id == usuario_id
+        ).first()
+
+        if not empleado:
+            raise HTTPException(
+                status_code=404,
+                detail="No se encontró información del empleado"
+            )
+
+        documento = db.query(Documento).filter(
+            Documento.id == documento_id,
+            Documento.empleado_id == empleado.id
+        ).first()
+
+        if not documento:
+            raise HTTPException(
+                status_code=404,
+                detail="Documento no encontrado"
+            )
+
 
     if documento.estado == "NO APLICA" or documento.ruta_archivo == "NO_APLICA":
         raise HTTPException(
             status_code=400,
             detail="Este documento no cuenta con un archivo PDF."
         )
-
 
     if not os.path.isfile(documento.ruta_archivo):
         raise HTTPException(
@@ -933,29 +1020,37 @@ def obtener_mis_documentos(
 
     for documento in documentos:
         validaciones_documento = db.query(Validacion).filter(
-            Validacion.empleado_id == empleado.id,
-            Validacion.documento_origen == documento.tipo_documento,
-            Validacion.origen_validacion == "IA",
-            Validacion.resultado == "INCONSISTENTE"
+            Validacion.empleado_id == empleado.id
         ).all()
 
         motivos_revision = []
 
         for validacion in validaciones_documento:
-            motivos_revision.append({
-                "campo": validacion.campo,
-                "motivo": validacion.motivo,
-                "valor_documento": validacion.valor_origen,
-                "valor_referencia": validacion.valor_comparado,
-                "origen_validacion": validacion.origen_validacion
-            })
+
+            participa_documento = (
+                    validacion.documento_origen == documento.tipo_documento or
+                    validacion.documento_comparado == documento.tipo_documento
+            )
+
+            if participa_documento and validacion.resultado != "COINCIDE":
+                motivos_revision.append({
+                    "campo": validacion.campo,
+                    "motivo": validacion.motivo,
+                    "valor_documento": validacion.valor_origen,
+                    "valor_referencia": validacion.valor_comparado,
+                    "origen_validacion": validacion.origen_validacion
+                })
 
         documentos_respuesta.append({
             "id": documento.id,
             "tipo_documento": documento.tipo_documento,
             "estado": documento.estado,
             "fecha_carga": documento.fecha_carga,
-            "motivos_revision": motivos_revision
+            "motivo_revision": " ".join(
+                motivo["motivo"]
+                for motivo in motivos_revision
+                if motivo.get("motivo")
+            )
         })
 
     return documentos_respuesta
