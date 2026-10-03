@@ -72,7 +72,7 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
                 "CLAVE ÚNICA DE REGISTRO DE POBLACIÓN",
                 "CURP"
             ],
-            "minimo_coincidencias": 1
+            "minimo_coincidencias": 2
         },
 
         "INE": {

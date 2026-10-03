@@ -242,16 +242,49 @@ def subir_documento(
     print(tipo_documento, "->", resultado_tipo_documento)
 
     if resultado_tipo_documento == "REQUIERE REVISIÓN":
-        documento.estado = "PENDIENTE"
+        documento.estado = "EN REVISION"
+
+        nombres_documentos = {
+            "ACTA_NACIMIENTO": "un Acta de nacimiento",
+            "CURP": "una CURP",
+            "INE": "una INE",
+            "RFC": "una Constancia de Situación Fiscal",
+            "COMPROBANTE_DOMICILIO": "un Comprobante de domicilio",
+            "DOCUMENTO_BANCARIO": "un Documento bancario para nómina",
+            "SEGURIDAD_SOCIAL": "un Documento de Seguridad Social"
+        }
+
+        nombre_esperado = nombres_documentos.get(
+            tipo_documento,
+            "el documento solicitado"
+        )
+
+        mensaje_tipo_documento = (
+            f"El documento no corresponde al tipo de documento solicitado. "
+            f"Se esperaba {nombre_esperado}."
+        )
+        guardar_validacion(
+            db=db,
+            empleado_id=empleado.id,
+            campo="TIPO_DOCUMENTO",
+            documento_origen=tipo_documento,
+            documento_comparado=tipo_documento,
+            valor_origen=archivo.filename,
+            valor_comparado=nombre_esperado,
+            resultado="NO COINCIDE",
+            motivo=mensaje_tipo_documento
+        )
+
         db.commit()
         db.refresh(documento)
 
         return {
-            "mensaje": "El archivo no parece corresponder al tipo de documento seleccionado. Verifica el archivo y vuelve a cargarlo.",
+            "mensaje": "El documento requiere corrección.",
             "empleado_id": empleado.id,
             "tipo_documento": tipo_documento,
-            "estado": "PENDIENTE",
+            "estado": "EN REVISION",
             "archivo": archivo.filename,
+            "motivo_revision": mensaje_tipo_documento,
             "documento_aceptado": False
         }
 
