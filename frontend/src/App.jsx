@@ -287,6 +287,54 @@ const subirDocumento = async () => {
   }
 }
 
+const quitarDocumento = async (documentoId) => {
+  const confirmar = window.confirm(
+    '¿Deseas quitar este documento? El documento quedará nuevamente como pendiente.'
+  )
+
+  if (!confirmar) {
+    return
+  }
+
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/documentos/${documentoId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setMensajeDocumento(
+        'Documento quitado correctamente.'
+      )
+
+      setArchivoSeleccionado(null)
+      setTipoDocumentoSeleccionado('')
+
+      await cargarDocumentos()
+    } else {
+      setMensajeDocumento(
+        datos.detail || 'No fue posible quitar el documento.'
+      )
+    }
+
+  } catch (error) {
+    console.error('Error al quitar documento:', error)
+
+    setMensajeDocumento(
+      'No fue posible conectar con el servidor.'
+    )
+  }
+}
+
 const cargarDocumentos = async () => {
   try {
     const token = localStorage.getItem('access_token')
@@ -2166,12 +2214,25 @@ if (rol === 'EMPLEADO') {
         {documentoGuardado &&
           documentoGuardado.estado !== 'NO APLICA' && (
             <button
+               type="button"
               className="secondary-button"
               onClick={() => verDocumento(documentoGuardado.id)}
             >
               Ver documento
             </button>
         )}
+
+        {documentoGuardado &&
+          documentoGuardado.estado !== 'NO APLICA' && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => quitarDocumento(documentoGuardado.id)}
+            >
+              Quitar documento
+            </button>
+        )}
+
 
         {documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
   !documentoGuardado && (
@@ -2201,7 +2262,6 @@ if (rol === 'EMPLEADO') {
   ) : (
     <label className="upload-button">
       Seleccionar PDF
-
       <input
         type="file"
         accept=".pdf,application/pdf"

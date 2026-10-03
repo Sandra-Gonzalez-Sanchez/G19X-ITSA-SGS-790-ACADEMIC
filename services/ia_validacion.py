@@ -13,14 +13,11 @@ def validar_documento_con_ia(
     nombre_empleado,
     validaciones
 ):
-    """
-    Realiza validación documental mediante IA local.
-    La IA analiza comparaciones explícitas entre campos equivalentes.
-    """
+
 
     comparaciones = []
 
-    # Comparación entre el nombre extraído y el registrado
+
     nombre_documento = datos_extraidos.get("nombre")
 
     if nombre_documento and nombre_empleado:
@@ -30,22 +27,43 @@ def validar_documento_con_ia(
             "valor_referencia": nombre_empleado
         })
 
-    # Agregamos las comparaciones que el sistema ya pudo construir
-    # entre documentos para que la IA realice el análisis.
     for validacion in validaciones:
         campo = validacion.get("campo")
         valor_origen = validacion.get("valor_origen")
         valor_comparado = validacion.get("valor_comparado")
 
+        documento_origen = validacion.get("documento_origen")
+        documento_comparado = validacion.get("documento_comparado")
+
         if (
-            campo
-            and valor_origen is not None
-            and valor_comparado is not None
+                campo
+                and valor_origen is not None
+                and valor_comparado is not None
         ):
+
+            if documento_origen == tipo_documento:
+                valor_documento = valor_origen
+                valor_referencia = valor_comparado
+
+            elif documento_comparado == tipo_documento:
+                valor_documento = valor_comparado
+                valor_referencia = valor_origen
+
+            else:
+                continue
+
             comparaciones.append({
                 "campo": campo,
-                "valor_documento": valor_origen,
-                "valor_referencia": valor_comparado
+                "valor_documento": valor_documento,
+                "valor_referencia": valor_referencia,
+                "documento_documento": tipo_documento,
+                "documento_referencia": (
+                    documento_comparado
+                    if documento_origen == tipo_documento
+                    else documento_origen
+                ),
+                "resultado_regla": validacion.get("resultado_regla"),
+                "motivo_regla": validacion.get("motivo_regla")
             })
 
     informacion = {
@@ -61,7 +79,12 @@ Debes validar EXCLUSIVAMENTE las comparaciones proporcionadas.
 Cada comparación contiene:
 - campo: indica qué dato estás validando;
 - valor_documento: valor extraído de un documento mediante OCR;
-- valor_referencia: valor equivalente utilizado para compararlo.
+- valor_referencia: valor equivalente utilizado para compararlo;
+- resultado_regla: resultado obtenido previamente por las reglas de comparación;
+- motivo_regla: motivo de la comparación cuando existe.
+
+El resultado_regla es una evidencia importante de la validación.
+La IA debe analizar esta evidencia y confirmar si la comparación es consistente.
 
 REGLAS OBLIGATORIAS:
 - Analiza cada comparación de manera independiente.
@@ -87,6 +110,46 @@ REGLAS OBLIGATORIAS:
   debes incluirla obligatoriamente en "inconsistencias" y establecer
   "requiere_revision": true.
 - No determines autenticidad, falsificación ni validez legal del documento.
+- Si resultado_regla es "NO COINCIDE", debes considerar esa comparación como INCONSISTENTE.
+- Si resultado_regla es "INCONSISTENTE", debes considerar esa comparación como INCONSISTENTE.
+- Si una comparación tiene resultado_regla "NO COINCIDE" o "INCONSISTENTE",
+  debes establecer "requiere_revision": true.
+- Nunca puedes devolver "VALIDADO" si alguna comparación tiene
+  resultado_regla "NO COINCIDE" o "INCONSISTENTE".
+- El motivo_regla debe utilizarse como apoyo para explicar la inconsistencia.
+- Nunca muestres al usuario nombres de campos internos del sistema.
+- Nunca menciones "resultado_regla", "motivo_regla",
+  "NOMBRE_EMPLEADO", "documento_origen" ni "documento_comparado".
+- Nunca expliques cómo funciona internamente la validación.
+- Los mensajes deben estar redactados en lenguaje claro para el empleado.
+- Si la comparación corresponde al campo NOMBRE y la referencia es el
+  nombre del empleado, indica que el nombre del documento no coincide
+  con el nombre registrado para el empleado.
+
+- Si la comparación corresponde al campo FECHA_NACIMIENTO y existe otro
+  documento como referencia, indica que la fecha de nacimiento del
+  documento no coincide con la fecha de nacimiento del documento de
+  referencia.
+
+- Si la comparación corresponde a CURP o RFC y existe otro documento
+  como referencia, indica que el valor del documento no coincide con
+  el valor del documento de referencia.
+
+- Nunca digas que una fecha de nacimiento está "registrada" por RH,
+  porque RH no registra la fecha de nacimiento del empleado.
+
+- Nunca inventes que RH registró una CURP, RFC o fecha de nacimiento.
+
+- Cuando exista una comparación entre dos documentos, utiliza los nombres
+  de los documentos para explicar la diferencia de forma clara.
+
+- No muestres nombres técnicos como ACTA_NACIMIENTO. Utiliza nombres
+  comprensibles como "Acta de nacimiento", "CURP", "INE",
+  "RFC" o "comprobante de domicilio".
+
+- Si no existe un documento de referencia para un campo, no inventes
+  una comparación.
+- No muestres resultados técnicos de las reglas de comparación.
 
 INFORMACIÓN:
 {json.dumps(informacion, ensure_ascii=False, default=str)}
@@ -127,6 +190,7 @@ Si detectas una inconsistencia:
         ],
         "stream": False,
         "format": "json",
+        "think": False,
         "options": {
             "temperature": 0
         }

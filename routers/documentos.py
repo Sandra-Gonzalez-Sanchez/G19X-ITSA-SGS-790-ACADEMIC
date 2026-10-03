@@ -324,9 +324,8 @@ def subir_documento(
     ).first()
 
 
-    # ==========================================================
+
     # VALIDACIÓN ACTA ↔ CURP
-    # ==========================================================
 
     if documento_acta and documento_curp:
 
@@ -583,13 +582,18 @@ Validacion.empleado_id == empleado.id,
                 validacion.documento_origen == tipo_documento or
                 validacion.documento_comparado == tipo_documento
         )
+        if not participa_documento:
+            continue
 
-        if participa_documento:
-            validaciones_para_ia.append({
-                "campo": validacion.campo,
-                "valor_origen": validacion.valor_origen,
-                "valor_comparado": validacion.valor_comparado
-            })
+        validaciones_para_ia.append({
+            "campo": validacion.campo,
+            "valor_origen": validacion.valor_origen,
+            "valor_comparado": validacion.valor_comparado,
+            "documento_origen": validacion.documento_origen,
+            "documento_comparado": validacion.documento_comparado,
+            "resultado_regla": validacion.resultado,
+            "motivo_regla": validacion.motivo
+        })
 
     datos_para_ia = {
         "nombre": datos_documento.nombre if datos_documento else None,
@@ -615,10 +619,23 @@ Validacion.empleado_id == empleado.id,
         campo_ia = inconsistencia.get("campo", "DESCONOCIDO")
         valor_documento_ia = inconsistencia.get("valor_documento")
         valor_referencia_ia = inconsistencia.get("valor_referencia")
+
         motivo_ia = inconsistencia.get(
             "motivo",
             "La inteligencia artificial detectó una inconsistencia."
         )
+
+        # Mensaje especial para comprobante de domicilio
+        # cuando la inconsistencia corresponde al nombre
+        if (
+                tipo_documento == "COMPROBANTE_DOMICILIO"
+                and campo_ia in ("NOMBRE", "NOMBRE_EMPLEADO")
+        ):
+            motivo_ia = (
+                "Comprobante de domicilio identificado correctamente. "
+                "El nombre del titular del comprobante es diferente "
+                "al nombre del empleado."
+            )
 
         guardar_validacion(
             db=db,
@@ -636,15 +653,26 @@ Validacion.empleado_id == empleado.id,
     if resultado_ia["requiere_revision"]:
         requiere_revision = True
 
-
     for validacion in validaciones_documento:
+
         participa_documento = (
-            validacion.documento_origen == tipo_documento or
-            validacion.documento_comparado == tipo_documento
+                validacion.documento_origen == tipo_documento or
+                validacion.documento_comparado == tipo_documento
         )
 
-        if participa_documento and validacion.resultado != "COINCIDE":
-            requiere_revision = True
+        if not participa_documento:
+            continue
+
+        if validacion.resultado not in (
+                "NO COINCIDE",
+                "INCONSISTENTE"
+        ):
+            continue
+
+        if validacion.campo == "CURP" and tipo_documento != "CURP":
+            continue
+
+        requiere_revision = True
 
     if requiere_revision:
         documento.estado = "EN REVISION"
@@ -657,8 +685,8 @@ Validacion.empleado_id == empleado.id,
     mensaje_revision = None
 
     motivos = []
+    tipos_mensaje = set()
 
-    # Revisar inconsistencias detectadas por las reglas del sistema
     for validacion in validaciones_documento:
 
         participa_documento = (
@@ -666,35 +694,44 @@ Validacion.empleado_id == empleado.id,
                 validacion.documento_comparado == tipo_documento
         )
 
-        # Solo considerar diferencias reales
         if participa_documento and validacion.resultado == "NO COINCIDE":
 
-            if validacion.campo == "NOMBRE":
-                motivos.append(
-                    f"El nombre no coincide entre "
-                    f"{validacion.documento_origen} y "
-                    f"{validacion.documento_comparado}."
-                )
+            if validacion.campo in ("NOMBRE", "NOMBRE_EMPLEADO"):
+
+                if tipo_documento == "COMPROBANTE_DOMICILIO":
+                    if "DOMICILIO" not in tipos_mensaje:
+                        motivos.append(
+                            "Comprobante de domicilio identificado correctamente. "
+                            "El nombre del titular del comprobante es diferente "
+                            "al nombre del empleado."
+                        )
+                        tipos_mensaje.add("DOMICILIO")
+
+                else:
+                    if "NOMBRE" not in tipos_mensaje:
+                        motivos.append(
+                            "El nombre del documento no coincide "
+                            "con los datos registrados."
+                        )
+                        tipos_mensaje.add("NOMBRE")
 
             elif validacion.campo == "FECHA_NACIMIENTO":
-                motivos.append(
-                    f"La fecha de nacimiento no coincide entre "
-                    f"{validacion.documento_origen} y "
-                    f"{validacion.documento_comparado}."
-                )
+
+                if "FECHA_NACIMIENTO" not in tipos_mensaje:
+                    motivos.append(
+                        "La fecha de nacimiento no coincide "
+                        "con los datos de referencia."
+                    )
+                    tipos_mensaje.add("FECHA_NACIMIENTO")
 
             elif validacion.campo == "CURP":
-                motivos.append(
-                    f"La CURP no coincide entre "
-                    f"{validacion.documento_origen} y "
-                    f"{validacion.documento_comparado}."
-                )
 
-            elif validacion.campo == "NOMBRE_EMPLEADO":
-                motivos.append(
-                    "El nombre del documento no coincide con "
-                    "el nombre registrado del empleado."
-                )
+                if "CURP" not in tipos_mensaje:
+                    motivos.append(
+                        "La CURP no coincide con los datos "
+                        "de referencia."
+                    )
+                    tipos_mensaje.add("CURP")
 
     # Revisar inconsistencias detectadas por IA
     if resultado_ia.get("requiere_revision"):
@@ -705,14 +742,25 @@ Validacion.empleado_id == empleado.id,
         )
 
         for inconsistencia in inconsistencias_ia:
-            motivo_ia = inconsistencia.get(
-                "motivo",
-                "La inteligencia artificial detectó una inconsistencia."
-            )
 
-            motivos.append(motivo_ia)
+            if tipo_documento == "COMPROBANTE_DOMICILIO":
+                if "DOMICILIO" not in tipos_mensaje:
+                    motivos.append(
+                        "Comprobante de domicilio identificado correctamente. "
+                        "El nombre del titular del comprobante es diferente "
+                        "al nombre del empleado."
+                    )
+                    tipos_mensaje.add("DOMICILIO")
 
-    # Quitar mensajes repetidos
+            else:
+                motivo_ia = inconsistencia.get(
+                    "motivo",
+                    "La inteligencia artificial detectó una inconsistencia."
+                )
+
+                motivos.append(motivo_ia)
+
+
     motivos = list(dict.fromkeys(motivos))
 
     if motivos:
@@ -736,6 +784,73 @@ Validacion.empleado_id == empleado.id,
         "estado": documento.estado,
         "motivo_revision": mensaje_revision
     }
+
+@router.delete("/{documento_id}")
+def eliminar_documento(
+    documento_id: int,
+    db: Session = Depends(get_db),
+    datos_empleado: dict = Depends(verificar_empleado)
+):
+    usuario_id = int(datos_empleado.get("sub"))
+
+    empleado = db.query(Empleado).filter(
+        Empleado.usuario_id == usuario_id
+    ).first()
+
+    if not empleado:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontró información del empleado."
+        )
+    documento = db.query(Documento).filter(
+        Documento.id == documento_id
+    ).first()
+
+    if not documento:
+        raise HTTPException(
+            status_code=404,
+            detail="Documento no encontrado."
+        )
+
+
+    if documento.empleado_id != empleado.id:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para eliminar este documento."
+        )
+
+    tipo_documento = documento.tipo_documento
+    empleado_id = documento.empleado_id
+
+    # Eliminar datos extraídos del documento
+    db.query(DatoExtraido).filter(
+        DatoExtraido.documento_id == documento.id
+    ).delete(synchronize_session=False)
+
+    # Eliminar validaciones relacionadas con este tipo de documento
+    db.query(Validacion).filter(
+        Validacion.empleado_id == empleado_id,
+        Validacion.documento_origen == tipo_documento
+    ).delete(synchronize_session=False)
+
+    db.query(Validacion).filter(
+        Validacion.empleado_id == empleado_id,
+        Validacion.documento_comparado == tipo_documento
+    ).delete(synchronize_session=False)
+
+    # Eliminar el archivo físico
+    if documento.ruta_archivo and os.path.exists(documento.ruta_archivo):
+        os.remove(documento.ruta_archivo)
+
+    # Eliminar el registro del documento
+    db.delete(documento)
+    db.commit()
+
+    return {
+        "mensaje": "Documento eliminado correctamente.",
+        "tipo_documento": tipo_documento
+    }
+
 
 @router.put("/{documento_id}/aprobar")
 def aprobar_documento(
@@ -879,7 +994,10 @@ def obtener_expediente_empleado(
                 validacion.documento_comparado == documento.tipo_documento
             )
 
-            if participa_documento and validacion.resultado != "COINCIDE":
+            if participa_documento and validacion.resultado in (
+                    "NO COINCIDE",
+                    "INCONSISTENTE"
+            ):
                 motivos_revision.append({
                     "campo": validacion.campo,
                     "documento_origen": validacion.documento_origen,
@@ -1010,8 +1128,6 @@ def obtener_mis_documentos(
             detail="No se encontró información del empleado"
         )
 
-
-
     documentos = db.query(Documento).filter(
         Documento.empleado_id == empleado.id
     ).all()
@@ -1032,7 +1148,10 @@ def obtener_mis_documentos(
                     validacion.documento_comparado == documento.tipo_documento
             )
 
-            if participa_documento and validacion.resultado != "COINCIDE":
+            if participa_documento and validacion.resultado in (
+                    "NO COINCIDE",
+                    "INCONSISTENTE"
+            ):
                 motivos_revision.append({
                     "campo": validacion.campo,
                     "motivo": validacion.motivo,
