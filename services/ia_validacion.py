@@ -123,8 +123,12 @@ REGLAS OBLIGATORIAS:
 - Nunca expliques cómo funciona internamente la validación.
 - Los mensajes deben estar redactados en lenguaje claro para el empleado.
 - Si la comparación corresponde al campo NOMBRE y la referencia es el
-  nombre del empleado, indica que el nombre del documento no coincide
-  con el nombre registrado para el empleado.
+  nombre del empleado, el motivo debe ser EXACTAMENTE:
+  "El nombre del documento no coincide con el nombre registrado para el empleado."
+- No agregues nombres de otros documentos al motivo.
+- No menciones "RFC", "Acta de nacimiento", "CURP", "INE" u otros
+  documentos dentro de este motivo.
+- No expliques con qué otros documentos se relaciona la comparación.
 
 - Si la comparación corresponde al campo FECHA_NACIMIENTO y existe otro
   documento como referencia, indica que la fecha de nacimiento del

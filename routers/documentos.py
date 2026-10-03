@@ -473,7 +473,6 @@ def subir_documento(
             print("CURP:", resultado_curp)
 
 
-
     if documento_acta and documento_rfc:
 
         datos_acta = db.query(DatoExtraido).filter(
@@ -485,15 +484,9 @@ def subir_documento(
         ).first()
 
         if datos_acta and datos_rfc:
-
             resultado_nombre_rfc = comparar_nombres(
                 datos_acta.nombre,
                 datos_rfc.nombre
-            )
-
-            resultado_fecha_rfc = comparar_fechas(
-                datos_acta.fecha_nacimiento,
-                datos_rfc.fecha_nacimiento
             )
 
             guardar_validacion(
@@ -507,20 +500,8 @@ def subir_documento(
                 resultado=resultado_nombre_rfc
             )
 
-            guardar_validacion(
-                db=db,
-                empleado_id=empleado.id,
-                campo="FECHA_NACIMIENTO",
-                documento_origen="ACTA_NACIMIENTO",
-                documento_comparado="RFC",
-                valor_origen=datos_acta.fecha_nacimiento,
-                valor_comparado=datos_rfc.fecha_nacimiento,
-                resultado=resultado_fecha_rfc
-            )
-
             print("VALIDACIÓN ACTA ↔ RFC:")
             print("NOMBRE:", resultado_nombre_rfc)
-            print("FECHA DE NACIMIENTO:", resultado_fecha_rfc)
 
     datos_documento = db.query(DatoExtraido).filter(
         DatoExtraido.documento_id == documento.id
@@ -733,7 +714,7 @@ Validacion.empleado_id == empleado.id,
                     )
                     tipos_mensaje.add("CURP")
 
-    # Revisar inconsistencias detectadas por IA
+
     if resultado_ia.get("requiere_revision"):
 
         inconsistencias_ia = resultado_ia.get(
