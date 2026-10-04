@@ -521,6 +521,10 @@ def subir_documento(
                 datos_acta.nombre,
                 datos_rfc.nombre
             )
+            resultado_fecha_rfc = comparar_fechas(
+                datos_acta.fecha_nacimiento,
+                datos_rfc.fecha_nacimiento
+            )
 
             guardar_validacion(
                 db=db,
@@ -532,9 +536,24 @@ def subir_documento(
                 valor_comparado=datos_rfc.nombre,
                 resultado=resultado_nombre_rfc
             )
+            guardar_validacion(
+                db=db,
+                empleado_id=empleado.id,
+                campo="FECHA_NACIMIENTO",
+                documento_origen="ACTA_NACIMIENTO",
+                documento_comparado="RFC",
+                valor_origen=datos_acta.fecha_nacimiento,
+                valor_comparado=datos_rfc.fecha_nacimiento,
+                resultado=resultado_fecha_rfc,
+                motivo=(
+                    "La fecha de nacimiento no coincide entre "
+                    "ACTA_NACIMIENTO y RFC."
+                ) if resultado_fecha_rfc == "NO COINCIDE" else None
+            )
 
             print("VALIDACIÓN ACTA ↔ RFC:")
             print("NOMBRE:", resultado_nombre_rfc)
+            print("FECHA DE NACIMIENTO:", resultado_fecha_rfc)
 
     datos_documento = db.query(DatoExtraido).filter(
         DatoExtraido.documento_id == documento.id
@@ -725,7 +744,7 @@ Validacion.empleado_id == empleado.id,
                     if "NOMBRE" not in tipos_mensaje:
                         motivos.append(
                             "El nombre del documento no coincide "
-                            "con los datos registrados."
+                            "con el nombre registrado para el empleado."
                         )
                         tipos_mensaje.add("NOMBRE")
 
@@ -733,8 +752,8 @@ Validacion.empleado_id == empleado.id,
 
                 if "FECHA_NACIMIENTO" not in tipos_mensaje:
                     motivos.append(
-                        "La fecha de nacimiento no coincide "
-                        "con los datos de referencia."
+                        "La fecha de nacimiento del documento no coincide "
+                        "con la registrada en el Acta de nacimiento."
                     )
                     tipos_mensaje.add("FECHA_NACIMIENTO")
 
@@ -742,8 +761,8 @@ Validacion.empleado_id == empleado.id,
 
                 if "CURP" not in tipos_mensaje:
                     motivos.append(
-                        "La CURP no coincide con los datos "
-                        "de referencia."
+                        "La CURP del documento no coincide "
+                        "con la registrada."
                     )
                     tipos_mensaje.add("CURP")
 
