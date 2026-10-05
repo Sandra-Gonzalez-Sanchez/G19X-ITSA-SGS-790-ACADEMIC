@@ -444,10 +444,7 @@ def subir_documento(
                 valor_origen=datos_acta.nombre,
                 valor_comparado=datos_ine.nombre,
                 resultado=resultado_nombre,
-                motivo=(
-                    "El nombre no coincide entre "
-                    "ACTA_NACIMIENTO e INE."
-                ) if resultado_nombre == "NO COINCIDE" else None
+                motivo=None
             )
 
             guardar_validacion(
@@ -545,10 +542,7 @@ def subir_documento(
                 valor_origen=datos_acta.fecha_nacimiento,
                 valor_comparado=datos_rfc.fecha_nacimiento,
                 resultado=resultado_fecha_rfc,
-                motivo=(
-                    "La fecha de nacimiento no coincide entre "
-                    "ACTA_NACIMIENTO y RFC."
-                ) if resultado_fecha_rfc == "NO COINCIDE" else None
+                motivo=None
             )
 
             print("VALIDACIÓN ACTA ↔ RFC:")
