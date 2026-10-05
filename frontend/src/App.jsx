@@ -849,10 +849,14 @@ const enviarInvitacion = async (empleadoId) => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-      console.log('Invitación enviada correctamente:', datos)
-    } else {
-      console.error('Error al enviar invitación:', datos.detail)
-    }
+  console.log('Invitación enviada correctamente:', datos)
+
+  alert('Invitación enviada correctamente.')
+} else {
+  console.error('Error al enviar invitación:', datos.detail)
+
+  alert(datos.detail || 'No se pudo enviar la invitación.')
+}
 
   } catch (error) {
     console.error('Error al enviar invitación:', error)
