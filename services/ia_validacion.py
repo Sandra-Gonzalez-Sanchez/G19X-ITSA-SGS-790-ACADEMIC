@@ -35,36 +35,53 @@ def validar_documento_con_ia(
         documento_origen = validacion.get("documento_origen")
         documento_comparado = validacion.get("documento_comparado")
 
-        if (
+        if not (
                 campo
                 and valor_origen is not None
                 and valor_comparado is not None
         ):
+            continue
 
-            if documento_origen == tipo_documento:
-                valor_documento = valor_origen
-                valor_referencia = valor_comparado
+        if documento_origen == tipo_documento:
+            valor_documento = valor_origen
+            valor_referencia = valor_comparado
+            documento_referencia = documento_comparado
 
-            elif documento_comparado == tipo_documento:
-                valor_documento = valor_comparado
-                valor_referencia = valor_origen
+        elif documento_comparado == tipo_documento:
+            valor_documento = valor_comparado
+            valor_referencia = valor_origen
+            documento_referencia = documento_origen
 
-            else:
+        else:
+            continue
+
+        if documento_referencia == "COMPROBANTE_DOMICILIO":
+            continue
+
+        if campo == "FECHA_NACIMIENTO":
+            if documento_referencia not in (
+                    "CURP",
+                    "INE",
+                    "RFC"
+            ):
                 continue
 
-            comparaciones.append({
-                "campo": campo,
-                "valor_documento": valor_documento,
-                "valor_referencia": valor_referencia,
-                "documento_documento": tipo_documento,
-                "documento_referencia": (
-                    documento_comparado
-                    if documento_origen == tipo_documento
-                    else documento_origen
-                ),
-                "resultado_regla": validacion.get("resultado_regla"),
-                "motivo_regla": validacion.get("motivo_regla")
-            })
+        if campo == "CURP":
+            if documento_referencia != "INE":
+                continue
+
+        if campo == "RFC":
+            continue
+
+        comparaciones.append({
+            "campo": campo,
+            "valor_documento": valor_documento,
+            "valor_referencia": valor_referencia,
+            "documento_documento": tipo_documento,
+            "documento_referencia": documento_referencia,
+            "resultado_regla": validacion.get("resultado_regla"),
+            "motivo_regla": validacion.get("motivo_regla")
+        })
 
     informacion = {
         "tipo_documento": tipo_documento,

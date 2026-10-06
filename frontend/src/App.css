@@ -371,3 +371,20 @@
 .invitation-card button:hover {
   background: #1d4ed8;
 }
+.employee-search {
+  margin: 15px 0 20px;
+}
+
+.employee-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.employee-search input:focus {
+  outline: none;
+  border-color: #1f4b7a;
+}

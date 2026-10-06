@@ -59,18 +59,28 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
     texto_completo = " ".join(textos_detectados).upper()
 
     reglas_documentos = {
+
         "ACTA_NACIMIENTO": {
             "palabras_clave": [
                 "ACTA DE NACIMIENTO",
-                "FECHA DE NACIMIENTO"
+                "REGISTRO CIVIL DE NACIMIENTO",
+                "CERTIFICADO DE NACIMIENTO",
+                "CERTIFICACIÓN DE NACIMIENTO",
+                "BIRTH CERTIFICATE",
+                "CERTIFICATE OF BIRTH"
             ],
-            "minimo_coincidencias": 2
+            "minimo_coincidencias": 1
         },
 
         "CURP": {
             "palabras_clave": [
                 "CLAVE ÚNICA DE REGISTRO DE POBLACIÓN",
-                "CURP"
+                "CLAVE UNICA DE REGISTRO DE POBLACION",
+                "CURP",
+                "NATIONAL IDENTIFICATION NUMBER",
+                "PERSONAL IDENTIFICATION NUMBER",
+                "NATIONAL ID NUMBER",
+                "IDENTIFICATION NUMBER"
             ],
             "minimo_coincidencias": 1
         },
@@ -78,7 +88,17 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
         "INE": {
             "palabras_clave": [
                 "INSTITUTO NACIONAL ELECTORAL",
-                "CREDENCIAL PARA VOTAR"
+                "CREDENCIAL PARA VOTAR",
+                "IDENTIFICATION CARD",
+                "ID CARD",
+                "DRIVER LICENSE",
+                "DRIVER'S LICENSE",
+                "STATE ID",
+                "STATE IDENTIFICATION",
+                "CÉDULA DE CIUDADANÍA",
+                "CEDULA DE CIUDADANIA",
+                "PASSPORT",
+                "PASAPORTE"
             ],
             "minimo_coincidencias": 1
         },
@@ -87,7 +107,15 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
             "palabras_clave": [
                 "CONSTANCIA DE SITUACIÓN FISCAL",
                 "REGISTRO FEDERAL DE CONTRIBUYENTES",
-                "RFC"
+                "RFC",
+                "DOCUMENTO TRIBUTARIO",
+                "IDENTIFICACIÓN TRIBUTARIA",
+                "IDENTIFICACION TRIBUTARIA",
+                "NIT",
+                "RUT",
+                "REGISTRO ÚNICO TRIBUTARIO",
+                "REGISTRO UNICO TRIBUTARIO",
+                "DIAN"
             ],
             "minimo_coincidencias": 1
         },
@@ -95,37 +123,59 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
         "COMPROBANTE_DOMICILIO": {
             "palabras_clave": [
                 "COMPROBANTE DE DOMICILIO",
+                "PROOF OF ADDRESS",
+                "ADDRESS VERIFICATION",
+                "UTILITY BILL",
+                "ELECTRICITY BILL",
+                "WATER BILL",
+                "GAS BILL",
+                "TELEPHONE BILL",
+                "PHONE BILL",
+                "RESIDENTIAL ADDRESS",
                 "DOMICILIO",
                 "DIRECCIÓN",
-                "SERVICIO",
-                "TOTAL A PAGAR"
+                "DIRECCION"
             ],
-            "minimo_coincidencias": 2
+            "minimo_coincidencias": 1
         },
 
         "DOCUMENTO_BANCARIO": {
             "palabras_clave": [
                 "DATOS BANCARIOS",
-                "CUENTA",
+                "DOCUMENTO BANCARIO",
+                "ESTADO DE CUENTA",
+                "CUENTA BANCARIA",
+                "BANK STATEMENT",
+                "BANK ACCOUNT",
+                "BANK ACCOUNT NUMBER",
+                "ACCOUNT NUMBER",
+                "BANK DETAILS",
+                "BANK INFORMATION",
                 "CLABE",
                 "TITULAR",
-                "BANCO"
+                "ACCOUNT HOLDER"
             ],
-            "minimo_coincidencias": 2
+            "minimo_coincidencias": 1
         },
 
         "SEGURIDAD_SOCIAL": {
-            "palabras_clave": [
-                "INSTITUTO MEXICANO DEL SEGURO SOCIAL",
-                "IMSS",
-                "NÚMERO DE SEGURIDAD SOCIAL",
-                "NUMERO DE SEGURIDAD SOCIAL",
-                "NSS"
-            ],
-            "minimo_coincidencias": 1
+    "palabras_clave": [
+        "INSTITUTO MEXICANO DEL SEGURO SOCIAL",
+        "IMSS",
+        "NÚMERO DE SEGURIDAD SOCIAL",
+        "NUMERO DE SEGURIDAD SOCIAL",
+        "NSS",
+        "DOCUMENTO DE SEGURIDAD SOCIAL",
+        "SEGURIDAD SOCIAL",
+        "NÚMERO DE AFILIACIÓN",
+        "NUMERO DE AFILIACION",
+        "AFILIACIÓN",
+        "AFILIACION",
+        "AFILIADO",
+        "COLOMBIA"
+    ],
+    "minimo_coincidencias": 1
         }
-
-
     }
 
     regla = reglas_documentos.get(tipo_documento)

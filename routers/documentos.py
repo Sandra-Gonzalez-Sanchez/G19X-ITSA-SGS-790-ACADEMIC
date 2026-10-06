@@ -3,6 +3,7 @@ import shutil
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+import re
 
 
 from database.database import get_db
@@ -99,9 +100,7 @@ def validar_datos_esenciales(tipo_documento, datos):
     if tipo_documento == "INE":
         return bool(
             datos.nombre and
-            datos.fecha_nacimiento and
-            datos.curp and
-            len(datos.curp) == 18
+            datos.fecha_nacimiento
         )
 
     if tipo_documento == "RFC":
@@ -125,15 +124,24 @@ def validar_datos_esenciales(tipo_documento, datos):
         return bool(
             datos.clabe and
             datos.clabe.isdigit() and
-            len(datos.clabe) == 18
+            len(datos.clabe) in (12, 18)
         )
 
     if tipo_documento == "SEGURIDAD_SOCIAL":
         return bool(
             datos.nombre and
             datos.nss and
-            datos.nss.isdigit() and
-            len(datos.nss) == 11
+            (
+                    (
+                            datos.nss.isdigit() and
+                            len(datos.nss) == 11
+                    )
+                    or
+                    re.fullmatch(
+                        r"SS-[A-Z]{2}-\d{4}-\d{4}",
+                        datos.nss.upper()
+                    )
+            )
         )
 
     return False
@@ -652,8 +660,7 @@ Validacion.empleado_id == empleado.id,
             "La inteligencia artificial detectó una inconsistencia."
         )
 
-        # Mensaje especial para comprobante de domicilio
-        # cuando la inconsistencia corresponde al nombre
+
         if (
                 tipo_documento == "COMPROBANTE_DOMICILIO"
                 and campo_ia in ("NOMBRE", "NOMBRE_EMPLEADO")
@@ -680,27 +687,6 @@ Validacion.empleado_id == empleado.id,
     if resultado_ia["requiere_revision"]:
         requiere_revision = True
 
-    for validacion in validaciones_documento:
-
-        participa_documento = (
-                validacion.documento_origen == tipo_documento or
-                validacion.documento_comparado == tipo_documento
-        )
-
-        if not participa_documento:
-            continue
-
-        if validacion.resultado not in (
-                "NO COINCIDE",
-                "INCONSISTENTE"
-        ):
-            continue
-
-        if validacion.campo == "CURP" and tipo_documento != "CURP":
-            continue
-
-        requiere_revision = True
-
     if requiere_revision:
         documento.estado = "EN REVISION"
     else:
@@ -711,6 +697,7 @@ Validacion.empleado_id == empleado.id,
 
     mensaje_revision = None
 
+    mensaje_revision = None
     motivos = []
     tipos_mensaje = set()
 
@@ -760,6 +747,9 @@ Validacion.empleado_id == empleado.id,
                     )
                     tipos_mensaje.add("CURP")
 
+    # ==========================================================
+    # VALIDACIONES DE IA
+    # ==========================================================
 
     if resultado_ia.get("requiere_revision"):
 
@@ -771,6 +761,7 @@ Validacion.empleado_id == empleado.id,
         for inconsistencia in inconsistencias_ia:
 
             if tipo_documento == "COMPROBANTE_DOMICILIO":
+
                 if "DOMICILIO" not in tipos_mensaje:
                     motivos.append(
                         "Comprobante de domicilio identificado correctamente. "
@@ -780,13 +771,49 @@ Validacion.empleado_id == empleado.id,
                     tipos_mensaje.add("DOMICILIO")
 
             else:
-                motivo_ia = inconsistencia.get(
-                    "motivo",
-                    "La inteligencia artificial detectó una inconsistencia."
-                )
 
-                motivos.append(motivo_ia)
+                campo_ia = inconsistencia.get("campo")
 
+                # Si la inconsistencia de IA corresponde a una fecha,
+                # usamos el mismo mensaje general de fecha.
+                if campo_ia == "FECHA_NACIMIENTO":
+
+                    if "FECHA_NACIMIENTO" not in tipos_mensaje:
+                        motivos.append(
+                            "La fecha de nacimiento del documento no coincide "
+                            "con la registrada en el Acta de nacimiento."
+                        )
+                        tipos_mensaje.add("FECHA_NACIMIENTO")
+
+                # Si corresponde al nombre, mostramos un solo mensaje.
+                elif campo_ia in ("NOMBRE", "NOMBRE_EMPLEADO"):
+
+                    if "NOMBRE" not in tipos_mensaje:
+                        motivos.append(
+                            "El nombre del documento no coincide "
+                            "con el nombre registrado para el empleado."
+                        )
+                        tipos_mensaje.add("NOMBRE")
+
+                # Si corresponde a CURP, mostramos un solo mensaje.
+                elif campo_ia == "CURP":
+
+                    if "CURP" not in tipos_mensaje:
+                        motivos.append(
+                            "La CURP del documento no coincide "
+                            "con la registrada."
+                        )
+                        tipos_mensaje.add("CURP")
+
+                else:
+
+                    motivo_ia = inconsistencia.get(
+                        "motivo",
+                        "La inteligencia artificial detectó una inconsistencia."
+                    )
+
+                    if motivo_ia not in motivos:
+                        motivos.append(motivo_ia)
 
     motivos = list(dict.fromkeys(motivos))
 
@@ -1075,9 +1102,6 @@ def ver_mi_documento(
     usuario_id = int(datos_usuario.get("sub"))
     rol = datos_usuario.get("rol")
 
-    # ==========================================================
-    # ACCESO PARA RH
-    # ==========================================================
 
     if rol == "RH":
 
@@ -1091,9 +1115,6 @@ def ver_mi_documento(
                 detail="Documento no encontrado"
             )
 
-    # ==========================================================
-    # ACCESO PARA EMPLEADO
-    # ==========================================================
 
     else:
 
@@ -1167,6 +1188,7 @@ def obtener_mis_documentos(
         ).all()
 
         motivos_revision = []
+        tipos_mensaje = set()
 
         for validacion in validaciones_documento:
 
@@ -1179,13 +1201,75 @@ def obtener_mis_documentos(
                     "NO COINCIDE",
                     "INCONSISTENTE"
             ):
-                motivos_revision.append({
-                    "campo": validacion.campo,
-                    "motivo": validacion.motivo,
-                    "valor_documento": validacion.valor_origen,
-                    "valor_referencia": validacion.valor_comparado,
-                    "origen_validacion": validacion.origen_validacion
-                })
+
+                campo = validacion.campo
+
+                # FECHA DE NACIMIENTO
+                if campo == "FECHA_NACIMIENTO":
+
+                    if "FECHA_NACIMIENTO" not in tipos_mensaje:
+                        motivos_revision.append({
+                            "campo": "FECHA_NACIMIENTO",
+                            "motivo": (
+                                "La fecha de nacimiento del documento "
+                                "no coincide con la registrada "
+                                "en los documentos del expediente."
+                            ),
+                            "valor_documento": validacion.valor_origen,
+                            "valor_referencia": validacion.valor_comparado,
+                            "origen_validacion": validacion.origen_validacion
+                        })
+
+                        tipos_mensaje.add("FECHA_NACIMIENTO")
+
+                # NOMBRE
+                elif campo in ("NOMBRE", "NOMBRE_EMPLEADO"):
+
+                    if "NOMBRE" not in tipos_mensaje:
+                        motivos_revision.append({
+                            "campo": "NOMBRE",
+                            "motivo": (
+                                "El nombre del documento no coincide "
+                                "con el nombre registrado para el empleado."
+                            ),
+                            "valor_documento": validacion.valor_origen,
+                            "valor_referencia": validacion.valor_comparado,
+                            "origen_validacion": validacion.origen_validacion
+                        })
+
+                        tipos_mensaje.add("NOMBRE")
+
+                # CURP
+                elif campo == "CURP":
+
+                    if "CURP" not in tipos_mensaje:
+                        motivos_revision.append({
+                            "campo": "CURP",
+                            "motivo": (
+                                "La CURP del documento no coincide "
+                                "con la registrada."
+                            ),
+                            "valor_documento": validacion.valor_origen,
+                            "valor_referencia": validacion.valor_comparado,
+                            "origen_validacion": validacion.origen_validacion
+                        })
+
+                        tipos_mensaje.add("CURP")
+
+                # OTROS
+                elif validacion.motivo:
+
+                    if validacion.motivo not in [
+                        motivo["motivo"]
+                        for motivo in motivos_revision
+                    ]:
+                        motivos_revision.append({
+                            "campo": campo,
+                            "motivo": validacion.motivo,
+                            "valor_documento": validacion.valor_origen,
+                            "valor_referencia": validacion.valor_comparado,
+                            "origen_validacion": validacion.origen_validacion
+                        })
 
         documentos_respuesta.append({
             "id": documento.id,

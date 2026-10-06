@@ -38,6 +38,8 @@ const [nuevaFechaIngreso, setNuevaFechaIngreso] = useState('')
 const [mensajeEmpleado, setMensajeEmpleado] = useState('')
 const [empleados, setEmpleados] = useState([])
 const [solicitudes, setSolicitudes] = useState([])
+const [busquedaEmpleado, setBusquedaEmpleado] = useState('')
+const [busquedaExpediente, setBusquedaExpediente] = useState('')
 const [areas, setAreas] = useState([])
 const [puestos, setPuestos] = useState([])
 const [nombreNuevaArea, setNombreNuevaArea] = useState('')
@@ -537,8 +539,12 @@ const registrarEmpleado = async () => {
 
       setMostrarAltaEmpleado(false)
 
-    } else {
+        } else {
       console.error('Error al registrar empleado:', datos.detail)
+
+      setMensajeEmpleado(
+        datos.detail || 'No fue posible registrar al empleado.'
+      )
     }
 
   } catch (error) {
@@ -573,6 +579,48 @@ const cargarEmpleados = async () => {
     console.error('Error al consultar empleados:', error)
   }
 }
+
+const empleadosFiltrados = empleados.filter((empleado) => {
+  const texto = busquedaEmpleado.toLowerCase().trim()
+
+  if (!texto) {
+    return true
+  }
+
+  const nombreCompleto = `
+    ${empleado.nombre}
+    ${empleado.apellido_paterno}
+    ${empleado.apellido_materno}
+  `.toLowerCase()
+
+  const correo = empleado.correo.toLowerCase()
+
+  return (
+    nombreCompleto.includes(texto) ||
+    correo.includes(texto)
+  )
+})
+
+const empleadosFiltradosExpedientes = empleados.filter((empleado) => {
+  const texto = busquedaExpediente.toLowerCase().trim()
+
+  if (!texto) {
+    return true
+  }
+
+  const nombreCompleto = `
+    ${empleado.nombre}
+    ${empleado.apellido_paterno}
+    ${empleado.apellido_materno}
+  `.toLowerCase()
+
+  const correo = empleado.correo.toLowerCase()
+
+  return (
+    nombreCompleto.includes(texto) ||
+    correo.includes(texto)
+  )
+})
 
 const cargarAreas = async () => {
   try {
@@ -961,14 +1009,14 @@ const crearPasswordEmpleado = async () => {
 const restablecerPassword = async () => {
 
   if (!passwordRestablecida || !confirmarPasswordRestablecida) {
-    alert('Completa ambos campos de contraseña.')
-    return
-  }
+  setMensajeRecuperacion('Completa ambos campos de contraseña.')
+  return
+}
 
-  if (passwordRestablecida !== confirmarPasswordRestablecida) {
-    alert('Las contraseñas no coinciden.')
-    return
-  }
+if (passwordRestablecida !== confirmarPasswordRestablecida) {
+  setMensajeRecuperacion('Las contraseñas no coinciden.')
+  return
+}
 
   const passwordValida =
     passwordRestablecida.length >= 8 &&
@@ -979,11 +1027,11 @@ const restablecerPassword = async () => {
     !/\s/.test(passwordRestablecida)
 
   if (!passwordValida) {
-    alert(
-      'La contraseña debe tener mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial.'
-    )
-    return
-  }
+  setMensajeRecuperacion(
+    'La contraseña debe tener mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial.'
+  )
+  return
+}
 
   try {
     const respuesta = await fetch(
@@ -1002,23 +1050,24 @@ const restablecerPassword = async () => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-      alert('Contraseña actualizada correctamente.')
+      setMensajeRecuperacion('Contraseña actualizada correctamente.')
 
       window.location.href = '/'
     } else {
-      alert(
+      setMensajeRecuperacion(
         datos.detail ||
         'No fue posible actualizar la contraseña.'
       )
     }
 
   } catch (error) {
-    console.error('Error al restablecer contraseña:', error)
+  console.error('Error al restablecer contraseña:', error)
 
-    alert('No fue posible conectar con el servidor.')
-  }
+  setMensajeRecuperacion(
+    'No fue posible conectar con el servidor.'
+  )
 }
-
+}
 const cerrarSesion = () => {
   localStorage.removeItem('access_token')
   localStorage.removeItem('rol')
@@ -1071,6 +1120,11 @@ if (esRestablecimiento) {
         <button onClick={restablecerPassword}>
           Cambiar contraseña
         </button>
+        {mensajeRecuperacion && (
+          <p className="login-error">
+            {mensajeRecuperacion}
+          </p>
+        )}
 
       </div>
 
@@ -1465,12 +1519,20 @@ if (rol === 'RH') {
     )}
 
         <h2 className="section-title">Empleados registrados</h2>
+        <div className="employee-search">
+          <input
+            type="text"
+            placeholder="Buscar empleado por nombre o correo..."
+            value={busquedaEmpleado}
+            onChange={(e) => setBusquedaEmpleado(e.target.value)}
+          />
+        </div>
 
     {empleados.length === 0 ? (
       <p>No hay empleados registrados.</p>
     ) : (
       <div className="employees-card">
-        {empleados.map((empleado) => (
+        {empleadosFiltrados.map((empleado) => (
   <div className="employee-row" key={empleado.id}>
 
     <div className="employee-info">
@@ -1641,13 +1703,21 @@ if (rol === 'RH') {
     {!expedienteSeleccionado ? (
       <>
         <h2 className="section-title">Empleados</h2>
+        <div className="employee-search">
+          <input
+            type="text"
+            placeholder="Buscar empleado por nombre o correo..."
+            value={busquedaExpediente}
+            onChange={(e) => setBusquedaExpediente(e.target.value)}
+          />
+        </div>
 
         {empleados.length === 0 ? (
           <p>No hay empleados registrados.</p>
         ) : (
           <div className="employees-card">
 
-            {empleados.map((empleado) => (
+            {empleadosFiltradosExpedientes.map((empleado) => (
               <div className="employee-row" key={empleado.id}>
 
                 <div className="employee-info">

@@ -105,67 +105,122 @@ def comparar_fecha_con_curp(fecha_nacimiento, curp):
 
 def extraer_rfc(textos):
     patron_rfc = r"\b[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}\b"
+    patron_nit = r"\b\d{3}\.?\d{3}\.?\d{3}-?\d\b"
 
     for texto in textos:
-        coincidencia = re.search(patron_rfc, texto.upper())
+        texto_mayusculas = texto.upper()
 
-        if coincidencia:
-            return coincidencia.group()
+        coincidencia_rfc = re.search(
+            patron_rfc,
+            texto_mayusculas
+        )
+
+        if coincidencia_rfc:
+            return coincidencia_rfc.group()
+
+        if (
+            "NIT" in texto_mayusculas
+            or "IDENTIFICACIÓN TRIBUTARIA" in texto_mayusculas
+            or "IDENTIFICACION TRIBUTARIA" in texto_mayusculas
+        ):
+            coincidencia_nit = re.search(
+                patron_nit,
+                texto_mayusculas
+            )
+
+            if coincidencia_nit:
+                return coincidencia_nit.group()
 
     return None
 
 def extraer_clabe(textos):
-    patron_clabe = r"\b\d{18}\b"
+    patrones = [
+        r"\b\d{18}\b",
+        r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b",
+        r"\b\d{4,17}\b"
+    ]
+
+    etiquetas = [
+        "CLABE",
+        "CUENTA BANCARIA",
+        "NÚMERO DE CUENTA",
+        "NUMERO DE CUENTA",
+        "ACCOUNT NUMBER",
+        "BANK ACCOUNT",
+        "BANK ACCOUNT NUMBER",
+        "ACCOUNT NO",
+        "ACCOUNT #",
+        "IBAN"
+    ]
 
     for i, texto in enumerate(textos):
         texto_mayusculas = texto.strip().upper()
 
-        if "CLABE" in texto_mayusculas:
-            # Caso 1: CLABE y número en la misma línea
-            coincidencia = re.search(patron_clabe, texto)
-
-            if coincidencia:
-                return coincidencia.group()
-
-            # Caso 2: el número está en la siguiente línea
-            for siguiente_texto in textos[i + 1:i + 3]:
-                coincidencia = re.search(
-                    patron_clabe,
-                    siguiente_texto
-                )
+        if any(etiqueta in texto_mayusculas for etiqueta in etiquetas):
+            for patron in patrones:
+                coincidencia = re.search(patron, texto_mayusculas)
 
                 if coincidencia:
                     return coincidencia.group()
+
+            for siguiente_texto in textos[i + 1:i + 3]:
+                siguiente_mayusculas = siguiente_texto.strip().upper()
+
+                for patron in patrones:
+                    coincidencia = re.search(
+                        patron,
+                        siguiente_mayusculas
+                    )
+
+                    if coincidencia:
+                        return coincidencia.group()
 
     return None
 
 def extraer_nss(textos):
-    patron_nss = r"\b\d{11}\b"
+    patrones = [
+        r"\b\d{11}\b",
+        r"\b\d{3}-\d{2}-\d{4}\b",
+        r"\b\d{9}\b",
+        r"\bSS-[A-Z]{2}-\d{4}-\d{4}\b"
+    ]
+
+    etiquetas = [
+        "NÚMERO DE SEGURIDAD SOCIAL",
+        "NUMERO DE SEGURIDAD SOCIAL",
+        "NSS:",
+        "NSS",
+        "SOCIAL SECURITY NUMBER",
+        "SSN:",
+        "SSN",
+        "NÚMERO DE AFILIACIÓN",
+        "NUMERO DE AFILIACION",
+        "AFILIACIÓN",
+        "AFILIACION"
+    ]
 
     for i, texto in enumerate(textos):
         texto_mayusculas = texto.strip().upper()
 
-        if (
-            "NÚMERO DE SEGURIDAD SOCIAL" in texto_mayusculas
-            or "NUMERO DE SEGURIDAD SOCIAL" in texto_mayusculas
-            or texto_mayusculas == "NSS:"
-            or texto_mayusculas == "NSS"
-        ):
-            # Caso 1: NSS y número en la misma línea
-            coincidencia = re.search(patron_nss, texto)
-
-            if coincidencia:
-                return coincidencia.group()
-
-            # Caso 2: NSS en las siguientes líneas
-            for siguiente_texto in textos[i + 1:i + 3]:
+        if any(etiqueta in texto_mayusculas for etiqueta in etiquetas):
+            for patron in patrones:
                 coincidencia = re.search(
-                    patron_nss,
-                    siguiente_texto
+                    patron,
+                    texto_mayusculas
                 )
 
                 if coincidencia:
                     return coincidencia.group()
+
+            for siguiente_texto in textos[i + 1:i + 3]:
+                for patron in patrones:
+                    coincidencia = re.search(
+                        patron,
+                        siguiente_texto.upper()
+                    )
+
+                    if coincidencia:
+                        return coincidencia.group()
 
     return None
 
@@ -223,21 +278,27 @@ def comparar_fecha_con_rfc(fecha_nacimiento, rfc):
     return "NO COINCIDE"
 
 def extraer_nombre(textos):
-    etiquetas_nombre = ["NOMBRE:", "NOMBRE COMPLETO:", "TITULAR:"]
+    etiquetas_nombre = [
+        "NOMBRE",
+        "NOMBRE COMPLETO",
+        "NOMBRE / RAZÓN",
+        "NOMBRE/RAZÓN",
+        "TITULAR:",
+        "AFILIADO"
+    ]
 
     textos_ignorar = [
         "NOMBRE DE LA PERSONA",
-        "NOMBRE DEL TITULAR"
+        "NOMBRE DEL TITULAR",
+        "NOMBRE / RAZÓN",
+        "NOMBRE/RAZÓN"
     ]
 
     for i, texto in enumerate(textos):
         texto_limpio = texto.strip()
         texto_mayusculas = texto_limpio.upper()
 
-        # Caso 1: la etiqueta y el nombre vienen separados
         if texto_mayusculas in etiquetas_nombre:
-
-            # Revisamos las siguientes líneas buscando el nombre real
             for siguiente_texto in textos[i + 1:i + 4]:
                 candidato = siguiente_texto.strip()
                 candidato_mayusculas = candidato.upper()
@@ -248,21 +309,27 @@ def extraer_nombre(textos):
                 if candidato:
                     return candidato
 
-        # Caso 2: la etiqueta y el nombre vienen en la misma línea
         for etiqueta in etiquetas_nombre:
             if texto_mayusculas.startswith(etiqueta):
                 nombre = texto_limpio[len(etiqueta):].strip()
 
-                if nombre:
+                if nombre and nombre.upper() not in textos_ignorar:
                     return nombre
 
     return None
 
+
 def extraer_domicilio(textos):
+    etiquetas_domicilio = [
+        "DOMICILIO",
+        "DIRECCIÓN",
+        "DIRECCION"
+    ]
+
     for i, texto in enumerate(textos):
         texto_mayusculas = texto.strip().upper()
 
-        if texto_mayusculas in ["DOMICILIO:", "DIRECCIÓN:", "DIRECCION:"]:
+        if texto_mayusculas in etiquetas_domicilio:
             lineas_domicilio = []
 
             for siguiente_texto in textos[i + 1:i + 3]:
@@ -276,28 +343,47 @@ def extraer_domicilio(textos):
 
     return None
 
+
 def extraer_fecha_nacimiento(textos):
-    patron_fecha = r"\b\d{2}/\d{2}/\d{4}\b"
+    patrones_fecha = [
+        r"\b\d{1,2}/\d{1,2}/\d{4}\b",
+        r"\b\d{1,2}-\d{1,2}-\d{4}\b",
+        r"\b(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s+\d{1,2},\s+\d{4}\b",
+        r"\b(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{1,2},\s+\d{4}\b",
+        r"\b\d{1,2}\s+(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s+\d{4}\b",
+        r"\b\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{4}\b"
+    ]
+
+    etiquetas_fecha = [
+        "FECHA DE NACIMIENTO",
+        "DATE OF BIRTH",
+        "BIRTH DATE",
+        "DOB"
+    ]
 
     for i, texto in enumerate(textos):
-        if "FECHA DE NACIMIENTO" in texto.upper():
+        texto_mayusculas = texto.upper()
 
-            # Caso 1: la fecha está en la misma línea
-            coincidencia = re.search(patron_fecha, texto)
-
-            if coincidencia:
-                return coincidencia.group()
-
-            # Caso 2: la fecha está en alguna de las líneas siguientes
-            for siguiente_texto in textos[i + 1:i + 6]:
-                coincidencia = re.search(patron_fecha, siguiente_texto)
+        if any(etiqueta in texto_mayusculas for etiqueta in etiquetas_fecha):
+            for patron in patrones_fecha:
+                coincidencia = re.search(patron, texto_mayusculas)
 
                 if coincidencia:
                     return coincidencia.group()
 
+            for siguiente_texto in textos[i + 1:i + 6]:
+                siguiente_mayusculas = siguiente_texto.upper()
+
+                for patron in patrones_fecha:
+                    coincidencia = re.search(patron, siguiente_mayusculas)
+
+                    if coincidencia:
+                        return coincidencia.group()
+
             break
 
     return None
+
 
 def extraer_datos(textos):
     analisis_curp = analizar_curp(textos)
