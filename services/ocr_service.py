@@ -26,12 +26,26 @@ def leer_documento(ruta_documento):
 
 def extraer_curp(textos):
     patron_curp = r"\b[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d\b"
+    patron_identificador_usa = r"\bUS-TEST-[A-Z]+-\d{8}\b"
 
     for texto in textos:
-        coincidencia = re.search(patron_curp, texto.upper())
+        texto_mayusculas = texto.upper()
 
-        if coincidencia:
-            return coincidencia.group()
+        coincidencia_curp = re.search(
+            patron_curp,
+            texto_mayusculas
+        )
+
+        if coincidencia_curp:
+            return coincidencia_curp.group()
+
+        coincidencia_usa = re.search(
+            patron_identificador_usa,
+            texto_mayusculas
+        )
+
+        if coincidencia_usa:
+            return coincidencia_usa.group()
 
     return None
 
@@ -281,9 +295,11 @@ def extraer_nombre(textos):
     etiquetas_nombre = [
         "NOMBRE",
         "NOMBRE COMPLETO",
+        "FULL NAME",
+        "NAME",
         "NOMBRE / RAZÓN",
         "NOMBRE/RAZÓN",
-        "TITULAR:",
+        "TITULAR",
         "AFILIADO"
     ]
 
@@ -298,10 +314,16 @@ def extraer_nombre(textos):
         texto_limpio = texto.strip()
         texto_mayusculas = texto_limpio.upper()
 
-        if texto_mayusculas in etiquetas_nombre:
+        # Quitar únicamente los ":" del final para comparar la etiqueta
+        etiqueta_normalizada = texto_mayusculas.rstrip(":")
+
+        # Caso 1:
+        # FULL NAME
+        # JUAN PEREZ LOPEZ
+        if etiqueta_normalizada in etiquetas_nombre:
             for siguiente_texto in textos[i + 1:i + 4]:
                 candidato = siguiente_texto.strip()
-                candidato_mayusculas = candidato.upper()
+                candidato_mayusculas = candidato.upper().rstrip(":")
 
                 if candidato_mayusculas in textos_ignorar:
                     continue
@@ -309,9 +331,11 @@ def extraer_nombre(textos):
                 if candidato:
                     return candidato
 
+        # Caso 2:
+        # FULL NAME: JUAN PEREZ LOPEZ
         for etiqueta in etiquetas_nombre:
-            if texto_mayusculas.startswith(etiqueta):
-                nombre = texto_limpio[len(etiqueta):].strip()
+            if texto_mayusculas.startswith(etiqueta + ":"):
+                nombre = texto_limpio[len(etiqueta) + 1:].strip()
 
                 if nombre and nombre.upper() not in textos_ignorar:
                     return nombre
@@ -323,7 +347,9 @@ def extraer_domicilio(textos):
     etiquetas_domicilio = [
         "DOMICILIO",
         "DIRECCIÓN",
-        "DIRECCION"
+        "DIRECCION",
+        "SERVICE ADDRESS",
+        "ADDRESS"
     ]
 
     for i, texto in enumerate(textos):
@@ -342,7 +368,6 @@ def extraer_domicilio(textos):
                 return " ".join(lineas_domicilio)
 
     return None
-
 
 def extraer_fecha_nacimiento(textos):
     patrones_fecha = [

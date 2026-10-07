@@ -20,7 +20,7 @@ class DatoExtraido(Base):
     clabe = Column(String(18), nullable=True)
     nss = Column(String(30), nullable=True)
 
-    curp = Column(String(18), nullable=True)
+    curp = Column(String(50), nullable=True)
     curp_candidata = Column(String(50), nullable=True)
     estado_formato_curp = Column(String(50), nullable=True)
 

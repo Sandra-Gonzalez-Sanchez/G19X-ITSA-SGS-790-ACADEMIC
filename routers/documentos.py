@@ -90,7 +90,17 @@ def validar_datos_esenciales(tipo_documento, datos):
             datos.nombre and
             datos.fecha_nacimiento and
             datos.curp and
-            len(datos.curp) == 18 and
+            (
+                    re.fullmatch(
+                        r"[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d",
+                        datos.curp.upper()
+                    )
+                    or
+                    re.fullmatch(
+                        r"US-TEST-[A-Z]+-\d{8}",
+                        datos.curp.upper()
+                    )
+            ) and
             datos.estado_formato_curp not in (
                 "REQUIERE REVISIÓN",
                 "NO DETECTADO"
@@ -104,15 +114,29 @@ def validar_datos_esenciales(tipo_documento, datos):
         )
 
     if tipo_documento == "RFC":
+        identificador_fiscal_valido = (
+                (
+                        datos.rfc and
+                        len(datos.rfc) in (12, 13) and
+                        datos.estado_formato_rfc not in (
+                            "REQUIERE REVISIÓN",
+                            "NO DETECTADO"
+                        )
+                )
+                or
+                (
+                        datos.nss and
+                        re.fullmatch(
+                            r"\d{3}-\d{2}-\d{4}",
+                            datos.nss
+                        )
+                )
+        )
+
         return bool(
             datos.nombre and
             datos.fecha_nacimiento and
-            datos.rfc and
-            len(datos.rfc) in (12, 13) and
-            datos.estado_formato_rfc not in (
-                "REQUIERE REVISIÓN",
-                "NO DETECTADO"
-            )
+            identificador_fiscal_valido
         )
 
     if tipo_documento == "COMPROBANTE_DOMICILIO":
@@ -127,6 +151,7 @@ def validar_datos_esenciales(tipo_documento, datos):
             len(datos.clabe) in (12, 18)
         )
 
+
     if tipo_documento == "SEGURIDAD_SOCIAL":
         return bool(
             datos.nombre and
@@ -140,6 +165,11 @@ def validar_datos_esenciales(tipo_documento, datos):
                     re.fullmatch(
                         r"SS-[A-Z]{2}-\d{4}-\d{4}",
                         datos.nss.upper()
+                    )
+                    or
+                    re.fullmatch(
+                        r"\d{3}-\d{2}-\d{4}",
+                        datos.nss
                     )
             )
         )

@@ -1,4 +1,5 @@
 import unicodedata
+from datetime import datetime
 
 
 def normalizar_nombre(nombre):
@@ -31,11 +32,37 @@ def comparar_nombres(nombre_1, nombre_2):
     return "NO COINCIDE"
 
 
+from datetime import datetime
+
+
 def comparar_fechas(fecha_1, fecha_2):
     if not fecha_1 or not fecha_2:
         return "NO SE PUEDE COMPARAR"
 
-    if fecha_1 == fecha_2:
+    formatos = [
+        "%d/%m/%Y",
+        "%m/%d/%Y",
+        "%Y-%m-%d"
+    ]
+
+    def convertir_fecha(fecha):
+        fecha = fecha.strip()
+
+        for formato in formatos:
+            try:
+                return datetime.strptime(fecha, formato).date()
+            except ValueError:
+                continue
+
+        return None
+
+    fecha_1_convertida = convertir_fecha(fecha_1)
+    fecha_2_convertida = convertir_fecha(fecha_2)
+
+    if not fecha_1_convertida or not fecha_2_convertida:
+        return "NO SE PUEDE COMPARAR"
+
+    if fecha_1_convertida == fecha_2_convertida:
         return "COINCIDE"
 
     return "NO COINCIDE"
@@ -172,7 +199,12 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
         "AFILIACIÓN",
         "AFILIACION",
         "AFILIADO",
-        "COLOMBIA"
+        "COLOMBIA",
+        "SOCIAL SECURITY",
+        "SOCIAL SECURITY RECORD",
+        "SOCIAL SECURITY NUMBER",
+        "SSN",
+        "UNITED STATES"
     ],
     "minimo_coincidencias": 1
         }
