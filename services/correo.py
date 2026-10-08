@@ -48,3 +48,39 @@ PluriOne - Develop Talent & Technology
         servidor.starttls()
         servidor.login(EMAIL_USER, EMAIL_PASSWORD)
         servidor.send_message(mensaje)
+
+def enviar_correo_recuperacion(
+    correo_destino: str,
+    enlace_recuperacion: str
+):
+    mensaje = EmailMessage()
+
+    mensaje["Subject"] = "Recuperación de contraseña - Sistema de Ingreso de Personal"
+    mensaje["To"] = correo_destino
+    mensaje["From"] = EMAIL_USER
+
+    mensaje.set_content(
+        f"""
+Hola,
+
+Se solicitó la recuperación de contraseña para tu cuenta
+del Sistema de Ingreso de Personal de PluriOne.
+
+Para establecer una nueva contraseña, utiliza el siguiente enlace:
+
+{enlace_recuperacion}
+
+Este enlace tiene una vigencia de 1 hora.
+
+Si no solicitaste recuperar tu contraseña, puedes ignorar este correo.
+
+Saludos,
+Sistema de Ingreso de Personal
+PluriOne - Develop Talent & Technology
+"""
+    )
+
+    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as servidor:
+        servidor.starttls()
+        servidor.login(EMAIL_USER, EMAIL_PASSWORD)
+        servidor.send_message(mensaje)

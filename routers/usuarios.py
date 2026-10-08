@@ -12,6 +12,7 @@ from schemas.usuario import (
     RestablecerPassword
 )
 from services.seguridad import validar_password, crear_token
+from services.correo import enviar_correo_recuperacion
 
 
 router = APIRouter(
@@ -127,11 +128,28 @@ def solicitar_recuperacion(
         datetime.now(timezone.utc) + timedelta(hours=1)
     )
 
-    db.commit()
-
     enlace = (
         f"http://localhost:5173/restablecer-password/{token}"
     )
+
+    try:
+        enviar_correo_recuperacion(
+            correo_destino=usuario.correo,
+            enlace_recuperacion=enlace
+        )
+
+        db.commit()
+
+    except Exception as error:
+        db.rollback()
+
+        print("ERROR AL ENVIAR CORREO DE RECUPERACIÓN:")
+        print(error)
+
+        raise HTTPException(
+            status_code=500,
+            detail="No fue posible enviar el correo de recuperación"
+        )
 
     print("ENLACE DE RECUPERACIÓN:")
     print(enlace)
