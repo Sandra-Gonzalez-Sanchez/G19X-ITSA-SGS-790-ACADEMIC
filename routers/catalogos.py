@@ -5,7 +5,7 @@ from sqlalchemy import func
 from database.database import get_db
 from models.area import Area
 from models.puesto import Puesto
-from schemas.catalogo import AreaCreate, PuestoCreate
+from schemas.catalogo import AreaCreate, PuestoCreate, CatalogoUpdate
 from services.seguridad import verificar_rh
 
 
@@ -14,10 +14,6 @@ router = APIRouter(
     tags=["Catálogos"]
 )
 
-
-# =========================
-# ÁREAS
-# =========================
 
 @router.get("/areas")
 def obtener_areas(
@@ -92,10 +88,52 @@ def cambiar_estado_area(
         "area": area
     }
 
+@router.patch("/areas/{area_id}")
+def editar_area(
+    area_id: int,
+    datos: CatalogoUpdate,
+    db: Session = Depends(get_db),
+    usuario_rh: dict = Depends(verificar_rh)
+):
+    area = db.query(Area).filter(
+        Area.id == area_id
+    ).first()
 
-# =========================
-# PUESTOS
-# =========================
+    if not area:
+        raise HTTPException(
+            status_code=404,
+            detail="Área no encontrada"
+        )
+
+    nombre = datos.nombre.strip()
+
+    if not nombre:
+        raise HTTPException(
+            status_code=400,
+            detail="El nombre del área es obligatorio"
+        )
+
+    existente = db.query(Area).filter(
+        func.lower(Area.nombre) == nombre.lower(),
+        Area.id != area_id
+    ).first()
+
+    if existente:
+        raise HTTPException(
+            status_code=400,
+            detail="Ya existe un área con ese nombre"
+        )
+
+    area.nombre = nombre
+
+    db.commit()
+    db.refresh(area)
+
+    return {
+        "mensaje": "Área actualizada correctamente",
+        "area": area
+    }
+
 
 @router.get("/puestos")
 def obtener_puestos(
@@ -167,5 +205,51 @@ def cambiar_estado_puesto(
 
     return {
         "mensaje": "Estado del puesto actualizado correctamente",
+        "puesto": puesto
+    }
+
+@router.patch("/puestos/{puesto_id}")
+def editar_puesto(
+    puesto_id: int,
+    datos: CatalogoUpdate,
+    db: Session = Depends(get_db),
+    usuario_rh: dict = Depends(verificar_rh)
+):
+    puesto = db.query(Puesto).filter(
+        Puesto.id == puesto_id
+    ).first()
+
+    if not puesto:
+        raise HTTPException(
+            status_code=404,
+            detail="Puesto no encontrado"
+        )
+
+    nombre = datos.nombre.strip()
+
+    if not nombre:
+        raise HTTPException(
+            status_code=400,
+            detail="El nombre del puesto es obligatorio"
+        )
+
+    existente = db.query(Puesto).filter(
+        func.lower(Puesto.nombre) == nombre.lower(),
+        Puesto.id != puesto_id
+    ).first()
+
+    if existente:
+        raise HTTPException(
+            status_code=400,
+            detail="Ya existe un puesto con ese nombre"
+        )
+
+    puesto.nombre = nombre
+
+    db.commit()
+    db.refresh(puesto)
+
+    return {
+        "mensaje": "Puesto actualizado correctamente",
         "puesto": puesto
     }

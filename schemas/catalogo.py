@@ -7,3 +7,6 @@ class AreaCreate(BaseModel):
 
 class PuestoCreate(BaseModel):
     nombre: str
+
+class CatalogoUpdate(BaseModel):
+    nombre: str

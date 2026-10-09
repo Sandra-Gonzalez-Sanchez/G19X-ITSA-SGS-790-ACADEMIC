@@ -46,7 +46,8 @@ def crear_empleado(
         correo=empleado.correo,
         area=empleado.area,
         puesto=empleado.puesto,
-        fecha_ingreso=empleado.fecha_ingreso
+        fecha_ingreso=empleado.fecha_ingreso,
+        activo = True
     )
 
     db.add(nuevo_empleado)
@@ -98,4 +99,29 @@ def eliminar_empleado(
 
     return {
         "mensaje": "Empleado eliminado correctamente"
+    }
+@router.patch("/{empleado_id}/estado")
+def cambiar_estado_empleado(
+    empleado_id: int,
+    db: Session = Depends(get_db),
+    usuario_rh: dict = Depends(verificar_rh)
+):
+    empleado = db.query(Empleado).filter(
+        Empleado.id == empleado_id
+    ).first()
+
+    if not empleado:
+        raise HTTPException(
+            status_code=404,
+            detail="Empleado no encontrado"
+        )
+
+    empleado.activo = not empleado.activo
+
+    db.commit()
+    db.refresh(empleado)
+
+    return {
+        "mensaje": "Estado del empleado actualizado correctamente",
+        "empleado": empleado
     }

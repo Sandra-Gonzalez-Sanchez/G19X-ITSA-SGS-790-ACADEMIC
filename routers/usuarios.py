@@ -11,7 +11,7 @@ from schemas.usuario import (
     SolicitudRecuperacion,
     RestablecerPassword
 )
-from services.seguridad import validar_password, crear_token
+from services.seguridad import validar_password, crear_token, verificar_rh
 from services.correo import enviar_correo_recuperacion
 
 
@@ -26,6 +26,55 @@ password_hash = PasswordHash.recommended()
 def crear_usuario_rh(
     usuario: UsuarioCreate,
     db: Session = Depends(get_db)
+):
+    # El primer usuario RH se crea durante la configuración inicial
+    rh_existente = db.query(Usuario).filter(
+        Usuario.rol == "RH"
+    ).first()
+
+    if rh_existente:
+        raise HTTPException(
+            status_code=403,
+            detail="Ya existe un usuario de Recursos Humanos. Utiliza el endpoint protegido para crear nuevos usuarios RH."
+        )
+
+    usuario_existente = db.query(Usuario).filter(
+        Usuario.correo == usuario.correo
+    ).first()
+
+    if usuario_existente:
+        raise HTTPException(
+            status_code=400,
+            detail="Ya existe un usuario registrado con este correo"
+        )
+
+    validar_password(usuario.password)
+
+    hash_generado = password_hash.hash(usuario.password)
+
+    nuevo_usuario = Usuario(
+        correo=usuario.correo,
+        password_hash=hash_generado,
+        rol="RH",
+        activo=True
+    )
+
+    db.add(nuevo_usuario)
+    db.commit()
+    db.refresh(nuevo_usuario)
+
+    return {
+        "mensaje": "Usuario inicial de Recursos Humanos creado correctamente",
+        "usuario_id": nuevo_usuario.id,
+        "correo": nuevo_usuario.correo,
+        "rol": nuevo_usuario.rol
+    }
+
+@router.post("/rh/crear")
+def crear_nuevo_usuario_rh(
+    usuario: UsuarioCreate,
+    db: Session = Depends(get_db),
+    datos_token: dict = Depends(verificar_rh)
 ):
     usuario_existente = db.query(Usuario).filter(
         Usuario.correo == usuario.correo

@@ -24,9 +24,6 @@ const [confirmarPasswordRestablecida, setConfirmarPasswordRestablecida] = useSta
   return localStorage.getItem('rol')
   })
   const [empleado, setEmpleado] = useState(null)
-  const [mostrarCorreccion, setMostrarCorreccion] = useState(false)
-  const [mensajeCorreccion, setMensajeCorreccion] = useState('')
-  const [nombreSolicitado, setNombreSolicitado] = useState('')
   const [mostrarAltaEmpleado, setMostrarAltaEmpleado] = useState(false)
   const [nuevoNombre, setNuevoNombre] = useState('')
 const [nuevoApellidoPaterno, setNuevoApellidoPaterno] = useState('')
@@ -46,6 +43,9 @@ const [nombreNuevaArea, setNombreNuevaArea] = useState('')
 const [nombreNuevoPuesto, setNombreNuevoPuesto] = useState('')
 const [seccionRH, setSeccionRH] = useState('empleados')
 const [seccionEmpleado, setSeccionEmpleado] = useState('inicio')
+const [correoNuevoRH, setCorreoNuevoRH] = useState('')
+const [passwordNuevoRH, setPasswordNuevoRH] = useState('')
+const [mensajeNuevoRH, setMensajeNuevoRH] = useState('')
 const esInvitacion = rutaActual.startsWith('/invitacion/')
 const tokenInvitacion = esInvitacion
   ? rutaActual.split('/invitacion/')[1]
@@ -68,9 +68,6 @@ const passwordSegura =
   passwordNumero &&
   passwordEspecial &&
   passwordSinEspacios
-const [apellidoPaternoSolicitado, setApellidoPaternoSolicitado] = useState('')
-const [apellidoMaternoSolicitado, setApellidoMaternoSolicitado] = useState('')
-const [motivoCorreccion, setMotivoCorreccion] = useState('')
 const [cuentaCreada, setCuentaCreada] = useState(false)
 const [tipoDocumentoSeleccionado, setTipoDocumentoSeleccionado] = useState('')
 const [archivoSeleccionado, setArchivoSeleccionado] = useState(null)
@@ -428,64 +425,6 @@ const marcarSeguridadSocialNoAplica = async () => {
   }
 }
 
-const enviarSolicitudCorreccion = async () => {
-    if (
-      !nombreSolicitado.trim() &&
-      !apellidoPaternoSolicitado.trim() &&
-      !apellidoMaternoSolicitado.trim()
-    ) {
-      setMensajeCorreccion(
-        'Debes indicar al menos un dato que deseas corregir.'
-      )
-      return
-    }
-
-    if (!motivoCorreccion.trim()) {
-      setMensajeCorreccion(
-        'Debes indicar el motivo de la corrección.'
-      )
-      return
-    }
-
-  try {
-    const token = localStorage.getItem('access_token')
-
-    const respuesta = await fetch(
-      'http://127.0.0.1:8001/solicitudes-correccion/',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          nombre_solicitado: nombreSolicitado || null,
-          apellido_paterno_solicitado: apellidoPaternoSolicitado || null,
-          apellido_materno_solicitado: apellidoMaternoSolicitado || null,
-          motivo: motivoCorreccion
-        })
-      }
-    )
-
-    const datos = await respuesta.json()
-
-    if (respuesta.ok) {
-      console.log('Solicitud enviada correctamente:', datos)
-      setMensajeCorreccion('Solicitud enviada correctamente.')
-      setNombreSolicitado('')
-      setApellidoPaternoSolicitado('')
-      setApellidoMaternoSolicitado('')
-      setMotivoCorreccion('')
-      setMostrarCorreccion(false)
-
-    } else {
-      console.error('Error al enviar la solicitud:', datos.detail)
-    }
-
-  } catch (error) {
-    console.error('Error al enviar la solicitud:', error)
-  }
-}
 
 const registrarEmpleado = async () => {
 
@@ -580,6 +519,35 @@ const cargarEmpleados = async () => {
   }
 }
 
+const cambiarEstadoEmpleado = async (empleado) => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/empleados/${empleado.id}/estado`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      alert(datos.detail || 'No fue posible cambiar el estado del empleado.')
+      return
+    }
+
+    await cargarEmpleados()
+
+  } catch (error) {
+    console.error('Error al cambiar estado del empleado:', error)
+    alert('No fue posible conectar con el servidor.')
+  }
+}
+
 const empleadosFiltrados = empleados.filter((empleado) => {
   const texto = busquedaEmpleado.toLowerCase().trim()
 
@@ -639,7 +607,7 @@ const cargarAreas = async () => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-      setAreas(datos.filter((area) => area.activo))
+      setAreas(datos)
     } else {
       console.error('Error al cargar áreas:', datos.detail)
     }
@@ -667,7 +635,7 @@ const cargarPuestos = async () => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-      setPuestos(datos.filter((puesto) => puesto.activo))
+      setPuestos(datos)
     } else {
       console.error('Error al cargar puestos:', datos.detail)
     }
@@ -1068,6 +1036,189 @@ if (passwordRestablecida !== confirmarPasswordRestablecida) {
   )
 }
 }
+
+const registrarRH = async () => {
+  if (!correoNuevoRH.trim() || !passwordNuevoRH) {
+    setMensajeNuevoRH('Completa el correo y la contraseña.')
+    return
+  }
+
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/usuarios/rh/crear',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          correo: correoNuevoRH,
+          password: passwordNuevoRH
+        })
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setMensajeNuevoRH('Usuario de Recursos Humanos creado correctamente.')
+      setCorreoNuevoRH('')
+      setPasswordNuevoRH('')
+    } else {
+      setMensajeNuevoRH(
+        datos.detail || 'No fue posible crear el usuario RH.'
+      )
+    }
+
+  } catch (error) {
+    console.error('Error al crear usuario RH:', error)
+    setMensajeNuevoRH('No fue posible conectar con el servidor.')
+  }
+}
+
+const editarArea = async (area) => {
+  const nuevoNombre = window.prompt(
+    'Nuevo nombre del área:',
+    area.nombre
+  )
+
+  if (!nuevoNombre || !nuevoNombre.trim()) return
+
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/catalogos/areas/${area.id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nombre: nuevoNombre
+        })
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      alert(datos.detail || 'No fue posible actualizar el área.')
+      return
+    }
+
+    alert('Área actualizada correctamente.')
+    cargarAreas()
+
+  } catch (error) {
+    console.error(error)
+    alert('No fue posible conectar con el servidor.')
+  }
+}
+
+const cambiarEstadoArea = async (area) => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/catalogos/areas/${area.id}/estado`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      alert(datos.detail || 'No fue posible cambiar el estado.')
+      return
+    }
+
+    cargarAreas()
+
+  } catch (error) {
+    console.error(error)
+    alert('No fue posible conectar con el servidor.')
+  }
+}
+
+const editarPuesto = async (puesto) => {
+  const nuevoNombre = window.prompt(
+    'Nuevo nombre del puesto:',
+    puesto.nombre
+  )
+
+  if (!nuevoNombre || !nuevoNombre.trim()) return
+
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/catalogos/puestos/${puesto.id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nombre: nuevoNombre
+        })
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      alert(datos.detail || 'No fue posible actualizar el puesto.')
+      return
+    }
+
+    alert('Puesto actualizado correctamente.')
+    cargarPuestos()
+
+  } catch (error) {
+    console.error(error)
+    alert('No fue posible conectar con el servidor.')
+  }
+}
+
+const cambiarEstadoPuesto = async (puesto) => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      `http://127.0.0.1:8001/catalogos/puestos/${puesto.id}/estado`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      alert(datos.detail || 'No fue posible cambiar el estado.')
+      return
+    }
+
+    cargarPuestos()
+
+  } catch (error) {
+    console.error(error)
+    alert('No fue posible conectar con el servidor.')
+  }
+}
+
 const cerrarSesion = () => {
   localStorage.removeItem('access_token')
   localStorage.removeItem('rol')
@@ -1246,6 +1397,16 @@ if (rol === 'RH') {
         >
           Empleados
       </button>
+
+      <button
+          className={seccionRH === 'usuarios-rh' ? 'active' : ''}
+          onClick={() => {
+            setSeccionRH('usuarios-rh')
+            setMensajeNuevoRH('')
+          }}
+        >
+          Usuarios RH
+        </button>
 
 
       <button
@@ -1553,31 +1714,40 @@ if (rol === 'RH') {
     </div>
 
     <div>
-      <span className="employee-label">Estado</span>
+  <span className="employee-label">Estado</span>
 
-      {empleado.usuario_id === null ? (
-        <span className="status status-pending">
-          Pendiente
-        </span>
-      ) : (
-        <span className="status status-active">
-          Cuenta activa
-        </span>
-      )}
-    </div>
+  {empleado.activo ? (
+    <span className="status status-active">
+      Activo
+    </span>
+  ) : (
+    <span className="status status-pending">
+      Pausado
+    </span>
+  )}
+</div>
 
-    <div className="employee-action">
-      {empleado.usuario_id === null ? (
-        <button
-          className="invite-button"
-          onClick={() => enviarInvitacion(empleado.id)}
-        >
-          Enviar invitación
-        </button>
-      ) : (
-        <span>—</span>
-      )}
-    </div>
+<div className="employee-action">
+
+  {empleado.usuario_id === null && (
+    <button
+      className="invite-button"
+      onClick={() => enviarInvitacion(empleado.id)}
+    >
+      Enviar invitación
+    </button>
+  )}
+
+  {empleado.usuario_id !== null && (
+    <button
+      className="secondary-button"
+      onClick={() => cambiarEstadoEmpleado(empleado)}
+    >
+      {empleado.activo ? 'Pausar empleado' : 'Activar empleado'}
+    </button>
+  )}
+
+</div>
 
   </div>
 ))}
@@ -1587,6 +1757,90 @@ if (rol === 'RH') {
     )}
             </div>
   )}
+
+{seccionRH === 'usuarios-rh' && (
+  <div>
+
+    <button
+      className="secondary-button back-button"
+      onClick={() => setSeccionRH('inicio')}
+    >
+      ← Volver al inicio
+    </button>
+
+    <div className="page-header">
+      <div>
+        <h1>Usuarios de Recursos Humanos</h1>
+        <p>
+          Registra nuevos usuarios con acceso al módulo de Recursos Humanos.
+        </p>
+      </div>
+    </div>
+
+    <div className="employee-form-card">
+
+      <h3>Registrar usuario RH</h3>
+
+      <p>
+        Ingresa el correo y la contraseña del nuevo usuario.
+      </p>
+
+      <div className="employee-form-grid">
+
+        <div>
+          <label>Correo electrónico</label>
+
+          <input
+            type="email"
+            placeholder="correo@empresa.com"
+            value={correoNuevoRH}
+            onChange={(e) => setCorreoNuevoRH(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label>Contraseña</label>
+
+          <input
+            type="password"
+            placeholder="Contraseña segura"
+            value={passwordNuevoRH}
+            onChange={(e) => setPasswordNuevoRH(e.target.value)}
+          />
+        </div>
+
+      </div>
+
+      <div className="form-actions">
+
+        <button
+          className="secondary-button"
+          onClick={() => {
+            setCorreoNuevoRH('')
+            setPasswordNuevoRH('')
+            setMensajeNuevoRH('')
+          }}
+        >
+          Limpiar
+        </button>
+
+        <button
+          className="primary-button"
+          onClick={registrarRH}
+        >
+          Registrar usuario RH
+        </button>
+
+      </div>
+
+      {mensajeNuevoRH && (
+        <p>{mensajeNuevoRH}</p>
+      )}
+
+    </div>
+
+  </div>
+)}
 
 {seccionRH === 'catalogos' && (
   <div>
@@ -1629,14 +1883,38 @@ if (rol === 'RH') {
           <p>No hay áreas registradas.</p>
         ) : (
           areas.map((area) => (
-            <div className="document-row" key={area.id}>
-              <strong>{area.nombre}</strong>
+  <div className="document-row" key={area.id}>
+    <strong>{area.nombre}</strong>
 
-              <span className="status status-active">
-                Activa
-              </span>
+    <span
+      className={
+        area.activo
+          ? "status status-active"
+          : "status status-pending"
+      }
+    >
+              {area.activo ? "Activa" : "Inactiva"}
+            </span>
+
+            <div className="document-actions">
+
+              <button
+                className="secondary-button"
+                onClick={() => editarArea(area)}
+              >
+                Editar
+              </button>
+
+              <button
+                className="secondary-button"
+                onClick={() => cambiarEstadoArea(area)}
+              >
+                {area.activo ? "Desactivar" : "Activar"}
+              </button>
+
             </div>
-          ))
+          </div>
+        ))
         )}
       </div>
     </div>
@@ -1666,14 +1944,38 @@ if (rol === 'RH') {
           <p>No hay puestos registrados.</p>
         ) : (
           puestos.map((puesto) => (
-            <div className="document-row" key={puesto.id}>
-              <strong>{puesto.nombre}</strong>
+  <div className="document-row" key={puesto.id}>
+    <strong>{puesto.nombre}</strong>
 
-              <span className="status status-active">
-                Activo
-              </span>
-            </div>
-          ))
+    <span
+      className={
+        puesto.activo
+          ? "status status-active"
+          : "status status-pending"
+      }
+    >
+                  {puesto.activo ? "Activo" : "Inactivo"}
+                </span>
+
+                <div className="document-actions">
+
+                  <button
+                    className="secondary-button"
+                    onClick={() => editarPuesto(puesto)}
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    className="secondary-button"
+                    onClick={() => cambiarEstadoPuesto(puesto)}
+                  >
+                    {puesto.activo ? "Desactivar" : "Activar"}
+                  </button>
+
+                </div>
+              </div>
+            ))
         )}
       </div>
     </div>
@@ -1864,88 +2166,6 @@ if (rol === 'RH') {
 
   </div>
 )}
-
-    {seccionRH === 'solicitudes' && (
-  <div>
-
-    <button
-      className="secondary-button back-button"
-      onClick={() => setSeccionRH('inicio')}
-    >
-      ← Volver al inicio
-    </button>
-
-    <div className="page-header">
-          <div>
-            <h1>Solicitudes de corrección</h1>
-            <p>
-              Revisa las solicitudes de modificación enviadas por los empleados.
-            </p>
-          </div>
-        </div>
-
-        {solicitudes.length === 0 ? (
-  <p>No hay solicitudes de corrección.</p>
-) : (
-  <div>
-    {solicitudes.map((solicitud) => (
-        <div className="request-card" key={solicitud.id}>
-        <p>
-          <strong>Empleado:</strong> {solicitud.empleado_id}
-        </p>
-
-        <p>
-          <strong>Nombre solicitado:</strong>{' '}
-          {solicitud.nombre_solicitado || 'Sin cambio'}
-        </p>
-
-        <p>
-          <strong>Apellido paterno:</strong>{' '}
-          {solicitud.apellido_paterno_solicitado || 'Sin cambio'}
-        </p>
-
-        <p>
-          <strong>Apellido materno:</strong>{' '}
-          {solicitud.apellido_materno_solicitado || 'Sin cambio'}
-        </p>
-
-        <p>
-          <strong>Motivo:</strong> {solicitud.motivo}
-        </p>
-
-        <p>
-          <strong>Estado:</strong>{' '}
-          <span className={`status-badge ${solicitud.estado.toLowerCase()}`}>
-            {solicitud.estado}
-          </span>
-        </p>
-
-        {solicitud.estado === 'PENDIENTE' && (
-      <div className="form-actions">
-
-        <button
-          className="primary-button"
-          onClick={() => resolverSolicitud(solicitud.id, 'APROBAR')}
-        >
-          Aprobar
-        </button>
-
-        <button
-          className="secondary-button"
-          onClick={() => resolverSolicitud(solicitud.id, 'RECHAZAR')}
-        >
-          Rechazar
-        </button>
-
-      </div>
-    )}
-      </div>
-    ))}
-  </div>
-)}
-
-      </div>
-    )}
 
       </main>
     </div>

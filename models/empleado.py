@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Boolean
 from database.database import Base
 
 
@@ -21,4 +21,5 @@ class Empleado(Base):
     area = Column(String(100), nullable=False)
     puesto = Column(String(100), nullable=False)
     fecha_ingreso = Column(Date, nullable=False)
+    activo = Column(Boolean, default=True, nullable=False)
 
