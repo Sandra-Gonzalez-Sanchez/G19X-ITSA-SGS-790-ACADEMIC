@@ -25,6 +25,11 @@ const [confirmarPasswordRestablecida, setConfirmarPasswordRestablecida] = useSta
   })
   const [empleado, setEmpleado] = useState(null)
   const [mostrarAltaEmpleado, setMostrarAltaEmpleado] = useState(false)
+  const [mostrarCorreccion, setMostrarCorreccion] = useState(false)
+const [nombreSolicitado, setNombreSolicitado] = useState('')
+const [apellidoPaternoSolicitado, setApellidoPaternoSolicitado] = useState('')
+const [apellidoMaternoSolicitado, setApellidoMaternoSolicitado] = useState('')
+const [motivoCorreccion, setMotivoCorreccion] = useState('')
   const [nuevoNombre, setNuevoNombre] = useState('')
 const [nuevoApellidoPaterno, setNuevoApellidoPaterno] = useState('')
 const [nuevoApellidoMaterno, setNuevoApellidoMaterno] = useState('')
@@ -223,6 +228,64 @@ const cargarPerfilEmpleado = async (token) => {
 
   } catch (error) {
     console.error('Error al consultar el perfil:', error)
+  }
+}
+
+const enviarSolicitudCorreccion = async () => {
+  if (
+    !nombreSolicitado.trim() &&
+    !apellidoPaternoSolicitado.trim() &&
+    !apellidoMaternoSolicitado.trim()
+  ) {
+    alert('Ingresa al menos un dato que deseas corregir.')
+    return
+  }
+
+  if (!motivoCorreccion.trim()) {
+    alert('Indica el motivo de la corrección.')
+    return
+  }
+
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/solicitudes-correccion/',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nombre_solicitado: nombreSolicitado.trim() || null,
+          apellido_paterno_solicitado:
+            apellidoPaternoSolicitado.trim() || null,
+          apellido_materno_solicitado:
+            apellidoMaternoSolicitado.trim() || null,
+          motivo: motivoCorreccion.trim()
+        })
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (!respuesta.ok) {
+      alert(datos.detail || 'No fue posible enviar la solicitud.')
+      return
+    }
+
+    alert('Solicitud de corrección enviada correctamente.')
+
+    setMostrarCorreccion(false)
+    setNombreSolicitado('')
+    setApellidoPaternoSolicitado('')
+    setApellidoMaternoSolicitado('')
+    setMotivoCorreccion('')
+
+  } catch (error) {
+    console.error('Error al enviar solicitud:', error)
+    alert('No fue posible conectar con el servidor.')
   }
 }
 
@@ -1982,6 +2045,126 @@ if (rol === 'RH') {
 
   </div>
 )}
+{seccionRH === 'solicitudes' && (
+  <div>
+
+    <button
+      className="secondary-button back-button"
+      onClick={() => setSeccionRH('inicio')}
+    >
+      ← Volver al inicio
+    </button>
+
+    <div className="page-header">
+      <div>
+        <h1>Solicitudes de corrección</h1>
+        <p>
+          Revisa las solicitudes de corrección de nombre y apellidos.
+        </p>
+      </div>
+    </div>
+
+    {solicitudes.length === 0 ? (
+      <p>No hay solicitudes de corrección.</p>
+    ) : (
+      <div className="employees-card">
+
+        {solicitudes.map((solicitud) => {
+
+          const empleadoSolicitud = empleados.find(
+            (empleado) => empleado.id === solicitud.empleado_id
+          )
+
+          return (
+            <div className="employee-row" key={solicitud.id}>
+
+              <div className="employee-info">
+                <strong>
+                  {empleadoSolicitud
+                    ? `${empleadoSolicitud.nombre} ${empleadoSolicitud.apellido_paterno} ${empleadoSolicitud.apellido_materno || ''}`
+                    : `Empleado #${solicitud.empleado_id}`}
+                </strong>
+
+                <span>
+                  Solicitud #{solicitud.id}
+                </span>
+              </div>
+
+              <div>
+                <span className="employee-label">
+                  Nombre solicitado
+                </span>
+                <p>
+                  {solicitud.nombre_solicitado || 'Sin cambio'}
+                </p>
+              </div>
+
+              <div>
+                <span className="employee-label">
+                  Apellido paterno
+                </span>
+                <p>
+                  {solicitud.apellido_paterno_solicitado || 'Sin cambio'}
+                </p>
+              </div>
+
+              <div>
+                <span className="employee-label">
+                  Apellido materno
+                </span>
+                <p>
+                  {solicitud.apellido_materno_solicitado || 'Sin cambio'}
+                </p>
+              </div>
+
+              <div>
+                <span className="employee-label">
+                  Motivo
+                </span>
+                <p>
+                  {solicitud.motivo}
+                </p>
+              </div>
+
+              <div>
+                <span className="status status-pending">
+                  {solicitud.estado}
+                </span>
+              </div>
+
+              {solicitud.estado === 'PENDIENTE' && (
+                <div className="request-actions">
+
+                          <button
+                            className="primary-button"
+                            onClick={() =>
+                              resolverSolicitud(solicitud.id, 'APROBAR')
+                            }
+                          >
+                            Aprobar
+                          </button>
+
+                          <button
+                            className="secondary-button"
+                            onClick={() =>
+                              resolverSolicitud(solicitud.id, 'RECHAZAR')
+                            }
+                          >
+                            Rechazar
+                          </button>
+
+                        </div>
+              )}
+
+            </div>
+          )
+        })}
+
+      </div>
+    )}
+
+  </div>
+)}
 
 {seccionRH === 'expedientes' && (
   <div>
@@ -2358,9 +2541,7 @@ if (rol === 'EMPLEADO') {
           </p>
         </div>
 
-        {mensajeCorreccion && (
-          <p>{mensajeCorreccion}</p>
-        )}
+
 
         <button
           className="secondary-button"

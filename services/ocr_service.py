@@ -307,32 +307,79 @@ def extraer_nombre(textos):
         "NOMBRE DE LA PERSONA",
         "NOMBRE DEL TITULAR",
         "NOMBRE / RAZÓN",
-        "NOMBRE/RAZÓN"
+        "NOMBRE/RAZÓN",
+        "SEXO M",
+        "SEXO F"
     ]
+
+    # =========================================================
+    # CASO ESPECIAL INE
+    # Ejemplo:
+    # GONZALEZ<SANCHEZ<<SANDRA<<<<<<
+    # =========================================================
+
+    for texto in textos:
+        texto_limpio = texto.strip()
+
+        if (
+                "<" in texto_limpio
+                and "<<" in texto_limpio
+                and texto_limpio.count("<") >= 4
+        ):
+            partes = texto_limpio.split("<")
+
+            partes_limpias = [
+                parte.strip()
+                for parte in partes
+                if parte.strip()
+            ]
+
+            if len(partes_limpias) >= 3:
+                apellido_paterno = partes_limpias[0]
+                apellido_materno = partes_limpias[1]
+                nombre = partes_limpias[2]
+
+                # La línea del nombre del INE debe contener
+                # únicamente texto alfabético en estas tres partes.
+                if (
+                        apellido_paterno.replace(" ", "").isalpha()
+                        and apellido_materno.replace(" ", "").isalpha()
+                        and nombre.replace(" ", "").isalpha()
+                ):
+                    return f"{nombre} {apellido_paterno} {apellido_materno}"
+
 
     for i, texto in enumerate(textos):
         texto_limpio = texto.strip()
         texto_mayusculas = texto_limpio.upper()
 
-        # Quitar únicamente los ":" del final para comparar la etiqueta
         etiqueta_normalizada = texto_mayusculas.rstrip(":")
 
-        # Caso 1:
-        # FULL NAME
-        # JUAN PEREZ LOPEZ
         if etiqueta_normalizada in etiquetas_nombre:
-            for siguiente_texto in textos[i + 1:i + 4]:
+            for siguiente_texto in textos[i + 1:i + 5]:
                 candidato = siguiente_texto.strip()
                 candidato_mayusculas = candidato.upper().rstrip(":")
 
                 if candidato_mayusculas in textos_ignorar:
                     continue
 
+                if candidato_mayusculas.startswith("SEXO"):
+                    continue
+
+                if candidato_mayusculas in [
+                    "DOMICILIO",
+                    "CURP",
+                    "FECHA DE NACIMIENTO",
+                    "AÑO DE REGISTRO",
+                    "SECCIÓN",
+                    "VIGENCIA"
+                ]:
+                    continue
+
                 if candidato:
                     return candidato
 
-        # Caso 2:
-        # FULL NAME: JUAN PEREZ LOPEZ
+
         for etiqueta in etiquetas_nombre:
             if texto_mayusculas.startswith(etiqueta + ":"):
                 nombre = texto_limpio[len(etiqueta) + 1:].strip()
@@ -352,13 +399,14 @@ def extraer_domicilio(textos):
         "ADDRESS"
     ]
 
+    # Caso general: documentos que indican explícitamente "DOMICILIO"
     for i, texto in enumerate(textos):
         texto_mayusculas = texto.strip().upper()
 
         if texto_mayusculas in etiquetas_domicilio:
             lineas_domicilio = []
 
-            for siguiente_texto in textos[i + 1:i + 3]:
+            for siguiente_texto in textos[i + 1:i + 4]:
                 linea = siguiente_texto.strip()
 
                 if linea:
@@ -366,6 +414,39 @@ def extraer_domicilio(textos):
 
             if lineas_domicilio:
                 return " ".join(lineas_domicilio)
+
+    # Caso especial: recibos de CFE
+    texto_completo = " ".join(textos).upper()
+
+    if "CFE" in texto_completo and "NO. DE SERVICIO" in texto_completo:
+        indice_servicio = None
+
+        for i, texto in enumerate(textos):
+            if "NO. DE SERVICIO" in texto.upper():
+                indice_servicio = i
+                break
+
+        if indice_servicio is not None:
+            candidatos = []
+
+            for texto in textos[max(0, indice_servicio - 6):indice_servicio]:
+                linea = texto.strip()
+
+                if not linea:
+                    continue
+
+                linea_mayusculas = linea.upper()
+
+                if "TOTAL A PAGAR" in linea_mayusculas:
+                    continue
+
+                if linea.startswith("$"):
+                    continue
+
+                candidatos.append(linea)
+
+            if candidatos:
+                return " ".join(candidatos[-4:])
 
     return None
 

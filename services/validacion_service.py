@@ -148,23 +148,34 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
         },
 
         "COMPROBANTE_DOMICILIO": {
-            "palabras_clave": [
-                "COMPROBANTE DE DOMICILIO",
-                "PROOF OF ADDRESS",
-                "ADDRESS VERIFICATION",
-                "UTILITY BILL",
-                "ELECTRICITY BILL",
-                "WATER BILL",
-                "GAS BILL",
-                "TELEPHONE BILL",
-                "PHONE BILL",
-                "RESIDENTIAL ADDRESS",
-                "DOMICILIO",
-                "DIRECCIÓN",
-                "DIRECCION"
-            ],
-            "minimo_coincidencias": 1
-        },
+    "palabras_clave": [
+        "COMPROBANTE DE DOMICILIO",
+        "PROOF OF ADDRESS",
+        "ADDRESS VERIFICATION",
+        "UTILITY BILL",
+        "ELECTRICITY BILL",
+        "WATER BILL",
+        "GAS BILL",
+        "TELEPHONE BILL",
+        "PHONE BILL",
+        "RESIDENTIAL ADDRESS",
+        "DOMICILIO",
+        "DIRECCIÓN",
+        "DIRECCION",
+
+
+        "COMISIÓN FEDERAL DE ELECTRICIDAD",
+        "COMISION FEDERAL DE ELECTRICIDAD",
+        "CFE",
+        "RECIBO DE LUZ",
+        "ENERGÍA ELÉCTRICA",
+        "ENERGIA ELECTRICA",
+        "NO. DE SERVICIO",
+        "NUMERO DE SERVICIO",
+        "RPU"
+    ],
+    "minimo_coincidencias": 1
+},
 
         "DOCUMENTO_BANCARIO": {
             "palabras_clave": [

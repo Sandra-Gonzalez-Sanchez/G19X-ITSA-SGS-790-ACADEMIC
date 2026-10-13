@@ -3,7 +3,7 @@
 Sistema web para la gestión de documentación requerida durante el proceso
 de ingreso de personal. Permite registrar empleados, enviar invitaciones,
 recibir documentos en formato PDF, procesarlos mediante OCR y realizar
-validaciones automáticas mediante Inteligencia Artificial.
+validaciones  mediante Inteligencia Artificial.
 
 
 ## Tecnologías utilizadas
@@ -54,9 +54,9 @@ principales del sistema:
 ### Recursos Humanos
 
 - Inicio de sesión.
-- Registro de usuarios de Recursos Humanos.
+- Configuración inicial del acceso de Recursos Humanos.
 - Registro de empleados.
-- Asignación de área y puesto.
+- Asignación de área y puesto para empleado.
 - Envío de invitaciones al empleado.
 - Consulta de expedientes.
 - Consulta de documentos cargados.
@@ -72,13 +72,12 @@ principales del sistema:
 
 ### Procesamiento documental
 
-- Identificación automática del tipo de documento.
+- Validación del tipo de documento cargado.
 - Procesamiento de documentos mediante OCR.
 - Extracción de información relevante.
 - Comparación de datos entre documentos.
 - Validación documental mediante Inteligencia Artificial utilizando Ollama.
 - Análisis de inconsistencias mediante el modelo de IA.
-- Identificación de inconsistencias en los documentos.
 
 ### Seguridad
 

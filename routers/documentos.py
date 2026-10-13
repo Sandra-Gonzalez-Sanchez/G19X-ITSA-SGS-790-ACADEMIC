@@ -624,8 +624,6 @@ def subir_documento(
 
     requiere_revision = False
 
-    if not datos_esenciales_correctos:
-        requiere_revision = True
 
 
     db.query(Validacion).filter(
@@ -724,6 +722,9 @@ Validacion.empleado_id == empleado.id,
 
     db.commit()
     db.refresh(documento)
+    validaciones_documento = db.query(Validacion).filter(
+        Validacion.empleado_id == empleado.id
+    ).all()
 
     mensaje_revision = None
 
@@ -777,9 +778,6 @@ Validacion.empleado_id == empleado.id,
                     )
                     tipos_mensaje.add("CURP")
 
-    # ==========================================================
-    # VALIDACIONES DE IA
-    # ==========================================================
 
     if resultado_ia.get("requiere_revision"):
 
@@ -1176,16 +1174,18 @@ def ver_mi_documento(
             detail="Este documento no cuenta con un archivo PDF."
         )
 
-    if not os.path.isfile(documento.ruta_archivo):
+    ruta_archivo = os.path.abspath(documento.ruta_archivo)
+
+    if not os.path.isfile(ruta_archivo):
         raise HTTPException(
             status_code=404,
             detail="El archivo PDF no fue encontrado."
         )
 
     return FileResponse(
-        path=documento.ruta_archivo,
+        path=ruta_archivo,
         media_type="application/pdf",
-        filename=os.path.basename(documento.ruta_archivo),
+        filename=os.path.basename(ruta_archivo),
         content_disposition_type="inline"
     )
 
