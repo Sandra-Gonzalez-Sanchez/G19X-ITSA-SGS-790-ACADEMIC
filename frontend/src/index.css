@@ -234,8 +234,6 @@ input {
   font-size: 15px;
 }
 
-/* ===== BOTÓN PRINCIPAL ===== */
-
 .primary-button {
   padding: 11px 18px;
 
@@ -255,7 +253,6 @@ input {
   background-color: var(--color-primary-dark);
   transform: translateY(-1px);
 }
-/* ===== SECCIÓN DE EMPLEADOS ===== */
 
 .section-title {
   margin: 10px 0 16px;
@@ -270,8 +267,6 @@ input {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
-
-/* ===== FILA DE EMPLEADO ===== */
 
 .employee-row {
   display: grid;
@@ -314,8 +309,6 @@ input {
   font-weight: 600;
 }
 
-/* ===== ESTADOS ===== */
-
 .status {
   display: inline-block;
   padding: 6px 10px;
@@ -334,8 +327,6 @@ input {
   background-color: #fff4e5;
   color: #a15c00;
 }
-
-/* ===== BOTÓN INVITACIÓN ===== */
 
 .invite-button {
   padding: 8px 12px;
@@ -358,7 +349,6 @@ input {
 .employee-action {
   text-align: right;
 }
-/* ===== FORMULARIO ALTA DE EMPLEADO ===== */
 
 .employee-form-card {
   margin-bottom: 30px;
@@ -423,7 +413,6 @@ input {
 .employee-form-grid select:focus {
   border-color: var(--color-primary);
 }
-/* ===== ACCIONES DEL FORMULARIO ===== */
 
 .form-actions {
   display: flex;
@@ -451,7 +440,7 @@ input {
   background-color: var(--color-background);
   border-color: var(--color-secondary);
 }
-/* ===== PERFIL DEL EMPLEADO ===== */
+
 
 .employee-profile-card {
   margin-top: 25px;
@@ -506,7 +495,6 @@ input {
   font-size: 15px;
   color: var(--color-text);
 }
-/* ===== SOLICITUD DE CORRECCIÓN ===== */
 
 .correction-form-card {
   margin-top: 22px;
@@ -565,7 +553,6 @@ input {
 .correction-form-card textarea:focus {
   border-color: var(--color-primary);
 }
-/* ===== CATÁLOGOS ===== */
 
 .catalog-card {
   margin-bottom: 25px;
@@ -583,8 +570,6 @@ input {
   font-size: 20px;
   color: var(--color-text);
 }
-
-/* ===== FORMULARIO DE CATÁLOGOS ===== */
 
 .catalog-form {
   display: flex;
@@ -612,7 +597,7 @@ input {
   border-color: var(--color-primary);
 }
 
-/* ===== ELEMENTOS DEL CATÁLOGO ===== */
+
 
 .catalog-card .documents-list {
   margin-top: 10px;
@@ -626,7 +611,7 @@ input {
   font-size: 14px;
   color: var(--color-text);
 }
-/* ===== INICIO / RESUMEN RH ===== */
+
 
 .dashboard-summary {
   display: grid;
@@ -697,7 +682,6 @@ input {
   text-decoration: underline;
 }
 
-/* ===== ACCIONES RÁPIDAS ===== */
 
 .quick-actions-card {
   padding: 25px;
@@ -726,7 +710,6 @@ input {
   gap: 12px;
 }
 
-/* ===== ADAPTACIÓN A PANTALLAS PEQUEÑAS ===== */
 
 @media (max-width: 900px) {
   .dashboard-summary {

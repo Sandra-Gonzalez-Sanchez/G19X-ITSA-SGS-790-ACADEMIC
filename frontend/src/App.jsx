@@ -839,7 +839,7 @@ const cambiarEstadoDocumento = async (documentoId, accion) => {
       return
     }
 
-    // Recarga el expediente para mostrar el nuevo estado
+
     await cargarExpediente(expedienteSeleccionado.empleado.id)
 
   } catch (error) {

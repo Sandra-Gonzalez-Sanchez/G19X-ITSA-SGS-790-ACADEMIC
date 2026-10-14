@@ -254,7 +254,6 @@ Si detectas una inconsistencia:
         if not isinstance(inconsistencias, list):
             inconsistencias = []
 
-        # Protección ante respuestas contradictorias del modelo.
         if inconsistencias:
             requiere_revision = True
             resultado_ia = "INCONSISTENTE"

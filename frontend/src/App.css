@@ -182,7 +182,7 @@
     border-right-color: var(--border);
   }
 }
-/* ===== SOLICITUDES DE CORRECCIÓN ===== */
+
 
 .request-card {
   margin-bottom: 14px;
@@ -202,7 +202,7 @@
 .request-card .form-actions {
   margin-top: 18px;
 }
-/* ===== ESTADOS DE SOLICITUD ===== */
+
 
 .status-badge {
   display: inline-block;

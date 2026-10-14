@@ -27,7 +27,6 @@ def crear_usuario_rh(
     usuario: UsuarioCreate,
     db: Session = Depends(get_db)
 ):
-    # El primer usuario RH se crea durante la configuración inicial
     rh_existente = db.query(Usuario).filter(
         Usuario.rol == "RH"
     ).first()

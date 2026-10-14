@@ -394,10 +394,6 @@ def subir_documento(
         Documento.tipo_documento == "RFC"
     ).first()
 
-
-
-    # VALIDACIÓN ACTA ↔ CURP
-
     if documento_acta and documento_curp:
 
         datos_acta = db.query(DatoExtraido).filter(
@@ -802,8 +798,7 @@ Validacion.empleado_id == empleado.id,
 
                 campo_ia = inconsistencia.get("campo")
 
-                # Si la inconsistencia de IA corresponde a una fecha,
-                # usamos el mismo mensaje general de fecha.
+
                 if campo_ia == "FECHA_NACIMIENTO":
 
                     if "FECHA_NACIMIENTO" not in tipos_mensaje:
@@ -813,7 +808,7 @@ Validacion.empleado_id == empleado.id,
                         )
                         tipos_mensaje.add("FECHA_NACIMIENTO")
 
-                # Si corresponde al nombre, mostramos un solo mensaje.
+
                 elif campo_ia in ("NOMBRE", "NOMBRE_EMPLEADO"):
 
                     if "NOMBRE" not in tipos_mensaje:
@@ -823,7 +818,7 @@ Validacion.empleado_id == empleado.id,
                         )
                         tipos_mensaje.add("NOMBRE")
 
-                # Si corresponde a CURP, mostramos un solo mensaje.
+
                 elif campo_ia == "CURP":
 
                     if "CURP" not in tipos_mensaje:
@@ -904,12 +899,10 @@ def eliminar_documento(
     tipo_documento = documento.tipo_documento
     empleado_id = documento.empleado_id
 
-    # Eliminar datos extraídos del documento
     db.query(DatoExtraido).filter(
         DatoExtraido.documento_id == documento.id
     ).delete(synchronize_session=False)
 
-    # Eliminar validaciones relacionadas con este tipo de documento
     db.query(Validacion).filter(
         Validacion.empleado_id == empleado_id,
         Validacion.documento_origen == tipo_documento
@@ -920,11 +913,11 @@ def eliminar_documento(
         Validacion.documento_comparado == tipo_documento
     ).delete(synchronize_session=False)
 
-    # Eliminar el archivo físico
+
     if documento.ruta_archivo and os.path.exists(documento.ruta_archivo):
         os.remove(documento.ruta_archivo)
 
-    # Eliminar el registro del documento
+
     db.delete(documento)
     db.commit()
 
@@ -1234,7 +1227,6 @@ def obtener_mis_documentos(
 
                 campo = validacion.campo
 
-                # FECHA DE NACIMIENTO
                 if campo == "FECHA_NACIMIENTO":
 
                     if "FECHA_NACIMIENTO" not in tipos_mensaje:
@@ -1252,7 +1244,6 @@ def obtener_mis_documentos(
 
                         tipos_mensaje.add("FECHA_NACIMIENTO")
 
-                # NOMBRE
                 elif campo in ("NOMBRE", "NOMBRE_EMPLEADO"):
 
                     if "NOMBRE" not in tipos_mensaje:
@@ -1269,7 +1260,7 @@ def obtener_mis_documentos(
 
                         tipos_mensaje.add("NOMBRE")
 
-                # CURP
+
                 elif campo == "CURP":
 
                     if "CURP" not in tipos_mensaje:
@@ -1286,7 +1277,6 @@ def obtener_mis_documentos(
 
                         tipos_mensaje.add("CURP")
 
-                # OTROS
                 elif validacion.motivo:
 
                     if validacion.motivo not in [

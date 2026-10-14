@@ -312,12 +312,6 @@ def extraer_nombre(textos):
         "SEXO F"
     ]
 
-    # =========================================================
-    # CASO ESPECIAL INE
-    # Ejemplo:
-    # GONZALEZ<SANCHEZ<<SANDRA<<<<<<
-    # =========================================================
-
     for texto in textos:
         texto_limpio = texto.strip()
 
@@ -339,8 +333,6 @@ def extraer_nombre(textos):
                 apellido_materno = partes_limpias[1]
                 nombre = partes_limpias[2]
 
-                # La línea del nombre del INE debe contener
-                # únicamente texto alfabético en estas tres partes.
                 if (
                         apellido_paterno.replace(" ", "").isalpha()
                         and apellido_materno.replace(" ", "").isalpha()
@@ -399,7 +391,6 @@ def extraer_domicilio(textos):
         "ADDRESS"
     ]
 
-    # Caso general: documentos que indican explícitamente "DOMICILIO"
     for i, texto in enumerate(textos):
         texto_mayusculas = texto.strip().upper()
 
@@ -415,7 +406,6 @@ def extraer_domicilio(textos):
             if lineas_domicilio:
                 return " ".join(lineas_domicilio)
 
-    # Caso especial: recibos de CFE
     texto_completo = " ".join(textos).upper()
 
     if "CFE" in texto_completo and "NO. DE SERVICIO" in texto_completo:
