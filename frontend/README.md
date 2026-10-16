@@ -1,16 +1,45 @@
-# React + Vite
+# Frontend — Sistema Inteligente de Gestión Documental
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Frontend del Sistema Inteligente de Gestión Documental para Ingreso de Personal, desarrollado con React y Vite.
 
-Currently, two official plugins are available:
+## Tecnologías
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19.2.8
+- Vite 8.3.0
+- JavaScript
+- CSS
 
-## React Compiler
+## Instalación
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Desde la carpeta `frontend/`, instalar las dependencias:
 
-## Expanding the Oxlint configuration
+```bash
+npm install
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Ejecución
+
+Para iniciar el servidor de desarrollo:
+
+```bash
+npm run dev
+```
+
+El frontend estará disponible en:
+
+```text
+http://localhost:5173
+```
+
+## Funcionalidades
+
+El frontend permite:
+
+- Inicio de sesión de Recursos Humanos y empleados.
+- Registro de empleados.
+- Envío y gestión de invitaciones.
+- Consulta de expedientes.
+- Carga de documentos en formato PDF.
+- Consulta del estado de los documentos.
+- Visualización de documentos.
+- Consulta de resultados de validación documental.

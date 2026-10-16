@@ -34,7 +34,6 @@ El proyecto está organizado en diferentes módulos que separan las funciones
 principales del sistema:
 
 - `app/` — Configuración principal y punto de entrada de la aplicación.
-- `backend/` — Archivos relacionados con la estructura del backend.
 - `database/` — Configuración y conexión con PostgreSQL.
 - `frontend/` — Interfaz web desarrollada con React y Vite.
 - `models/` — Modelos de datos utilizados por el sistema.
@@ -44,10 +43,9 @@ principales del sistema:
   Inteligencia Artificial, seguridad y validación documental.
 - `ocr_pruebas/` — Archivos utilizados para realizar pruebas del procesamiento
   OCR.
-- `uploads/` — Directorio utilizado para almacenar los documentos cargados
-  durante la ejecución del sistema.
 - `.env.example` — Plantilla de las variables de entorno necesarias.
 - `requirements.txt` — Dependencias de Python utilizadas por el backend.
+- `requirements-ocr.txt` — Dependencias de Python utilizadas para el procesamiento OCR.
 
 ## Funcionalidades principales
 
@@ -120,6 +118,7 @@ Para crear la base de datos:
 
 ```sql
 CREATE DATABASE ingreso_personal;
+```
 
 ## Instalación
 
@@ -146,8 +145,36 @@ Con el entorno virtual activado, instalar las dependencias:
 ```bash
 pip install -r requirements.txt
 ```
+### 3. Configurar el entorno OCR
 
-### 3. Configurar PostgreSQL
+El sistema utiliza PaddleOCR para procesar los documentos PDF y extraer información mediante reconocimiento óptico de caracteres (OCR).
+
+El procesamiento OCR se ejecuta en un entorno virtual independiente llamado `.venv_ocr`.
+
+Crear el entorno OCR desde la carpeta principal del proyecto:
+
+```powershell
+python -m venv .venv_ocr
+```
+
+Activar el entorno OCR:
+
+```powershell
+.\.venv_ocr\Scripts\Activate.ps1
+```
+
+Instalar las dependencias del OCR:
+
+```powershell
+pip install -r requirements-ocr.txt
+```
+
+Las principales dependencias utilizadas son:
+
+- PaddleOCR 3.7.0
+- PaddlePaddle 3.3.1
+
+### 4. Configurar PostgreSQL
 
 Crear la base de datos utilizada por el sistema:
 
@@ -157,7 +184,7 @@ ingreso_personal
 
 La conexión con PostgreSQL se configura mediante las variables de entorno del archivo `.env`.
 
-### 4. Configurar Ollama
+### 5. Configurar Ollama
 
 Verificar que Ollama esté instalado:
 
@@ -177,7 +204,7 @@ Comprobar que el modelo esté disponible:
 ollama list
 ```
 
-### 5. Configurar el archivo `.env`
+### 6. Configurar el archivo `.env`
 
 Crear un archivo `.env` en la carpeta principal del proyecto y configurar las variables necesarias para:
 

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 import re
+import uuid
 
 
 from database.database import get_db
@@ -237,9 +238,12 @@ def subir_documento(
         exist_ok=True
     )
 
+    extension = os.path.splitext(archivo.filename)[1].lower()
+    nombre_archivo = f"{tipo_documento}_{uuid.uuid4().hex}{extension}"
+
     ruta_archivo = os.path.join(
         carpeta_empleado,
-        archivo.filename
+        nombre_archivo
     )
 
     with open(ruta_archivo, "wb") as buffer:
