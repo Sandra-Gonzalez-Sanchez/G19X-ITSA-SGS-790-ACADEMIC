@@ -28,13 +28,18 @@ Los documentos son procesados mediante OCR y posteriormente analizados mediante 
 - Consulta del estado de sus documentos.
 
 ### Procesamiento documental
+- Validación del tipo de documento cargado.
 - Procesamiento de documentos mediante OCR.
-- Extracción de información.
-- Comparación de información entre documentos.
-- Validación mediante Inteligencia Artificial.
-- Detección de inconsistencias.
+- Extracción de información relevante.
+- Comparación de datos entre documentos.
+- Validación documental mediante Inteligencia Artificial.
+- Detección de inconsistencias entre la información extraída.
 
 ## 3. Documentos contemplados
+
+El sistema está enfocado en el procesamiento y validación de documentos oficiales de México.
+
+Los documentos contemplados son:
 
 - Acta de nacimiento.
 - CURP.
@@ -43,6 +48,8 @@ Los documentos son procesados mediante OCR y posteriormente analizados mediante 
 - Comprobante de domicilio.
 - Documento bancario para nómina.
 - Documento de Seguridad Social, de forma condicional.
+
+Los documentos emitidos en otros países o que no correspondan con los formatos contemplados por el sistema no se consideran documentos válidos para el proceso de validación.
 
 ## 4. Tecnologías
 
@@ -79,3 +86,4 @@ El sistema no contempla:
 - Vacaciones.
 - Evaluaciones de desempeño.
 - Gestión de personal posterior al proceso de ingreso documental.
+- Validación de documentos oficiales emitidos por otros países.

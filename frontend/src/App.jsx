@@ -2733,8 +2733,21 @@ if (rol === 'EMPLEADO') {
       >
         Subir documento
       </button>
+
+      <button
+        type="button"
+        className="secondary-button"
+        onClick={() => {
+          setArchivoSeleccionado(null)
+          setTipoDocumentoSeleccionado('')
+          setMensajeDocumento('')
+        }}
+      >
+        Cancelar
+      </button>
     </>
   ) : (
+
     <label className="upload-button">
       Seleccionar PDF
       <input

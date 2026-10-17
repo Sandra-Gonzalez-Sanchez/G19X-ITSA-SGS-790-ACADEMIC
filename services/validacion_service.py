@@ -79,6 +79,18 @@ def comparar_curp(curp_1, curp_2):
 
     return "NO COINCIDE"
 
+def comparar_rfc(rfc_1, rfc_2):
+    if not rfc_1 or not rfc_2:
+        return "NO SE PUEDE COMPARAR"
+
+    rfc_1 = rfc_1.strip().upper()
+    rfc_2 = rfc_2.strip().upper()
+
+    if rfc_1 == rfc_2:
+        return "COINCIDE"
+
+    return "NO COINCIDE"
+
 def validar_tipo_documento(tipo_documento, textos_detectados):
     if not textos_detectados:
         return "REQUIERE REVISIÓN"
@@ -92,9 +104,7 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
                 "ACTA DE NACIMIENTO",
                 "REGISTRO CIVIL DE NACIMIENTO",
                 "CERTIFICADO DE NACIMIENTO",
-                "CERTIFICACIÓN DE NACIMIENTO",
-                "BIRTH CERTIFICATE",
-                "CERTIFICATE OF BIRTH"
+                "CERTIFICACIÓN DE NACIMIENTO"
             ],
             "minimo_coincidencias": 1
         },
@@ -103,11 +113,7 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
             "palabras_clave": [
                 "CLAVE ÚNICA DE REGISTRO DE POBLACIÓN",
                 "CLAVE UNICA DE REGISTRO DE POBLACION",
-                "CURP",
-                "NATIONAL IDENTIFICATION NUMBER",
-                "PERSONAL IDENTIFICATION NUMBER",
-                "NATIONAL ID NUMBER",
-                "IDENTIFICATION NUMBER"
+                "CURP"
             ],
             "minimo_coincidencias": 1
         },
@@ -116,15 +122,6 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
             "palabras_clave": [
                 "INSTITUTO NACIONAL ELECTORAL",
                 "CREDENCIAL PARA VOTAR",
-                "IDENTIFICATION CARD",
-                "ID CARD",
-                "DRIVER LICENSE",
-                "DRIVER'S LICENSE",
-                "STATE ID",
-                "STATE IDENTIFICATION",
-                "CÉDULA DE CIUDADANÍA",
-                "CEDULA DE CIUDADANIA",
-                "PASSPORT",
                 "PASAPORTE"
             ],
             "minimo_coincidencias": 1
@@ -134,48 +131,29 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
             "palabras_clave": [
                 "CONSTANCIA DE SITUACIÓN FISCAL",
                 "REGISTRO FEDERAL DE CONTRIBUYENTES",
-                "RFC",
-                "DOCUMENTO TRIBUTARIO",
-                "IDENTIFICACIÓN TRIBUTARIA",
-                "IDENTIFICACION TRIBUTARIA",
-                "NIT",
-                "RUT",
-                "REGISTRO ÚNICO TRIBUTARIO",
-                "REGISTRO UNICO TRIBUTARIO",
-                "DIAN"
+                "RFC"
             ],
             "minimo_coincidencias": 1
         },
 
         "COMPROBANTE_DOMICILIO": {
-    "palabras_clave": [
-        "COMPROBANTE DE DOMICILIO",
-        "PROOF OF ADDRESS",
-        "ADDRESS VERIFICATION",
-        "UTILITY BILL",
-        "ELECTRICITY BILL",
-        "WATER BILL",
-        "GAS BILL",
-        "TELEPHONE BILL",
-        "PHONE BILL",
-        "RESIDENTIAL ADDRESS",
-        "DOMICILIO",
-        "DIRECCIÓN",
-        "DIRECCION",
-
-
-        "COMISIÓN FEDERAL DE ELECTRICIDAD",
-        "COMISION FEDERAL DE ELECTRICIDAD",
-        "CFE",
-        "RECIBO DE LUZ",
-        "ENERGÍA ELÉCTRICA",
-        "ENERGIA ELECTRICA",
-        "NO. DE SERVICIO",
-        "NUMERO DE SERVICIO",
-        "RPU"
-    ],
-    "minimo_coincidencias": 1
-},
+            "palabras_clave": [
+                "COMPROBANTE DE DOMICILIO",
+                "DOMICILIO",
+                "DIRECCIÓN",
+                "DIRECCION",
+                "COMISIÓN FEDERAL DE ELECTRICIDAD",
+                "COMISION FEDERAL DE ELECTRICIDAD",
+                "CFE",
+                "RECIBO DE LUZ",
+                "ENERGÍA ELÉCTRICA",
+                "ENERGIA ELECTRICA",
+                "NO. DE SERVICIO",
+                "NUMERO DE SERVICIO",
+                "RPU"
+            ],
+            "minimo_coincidencias": 1
+        },
 
         "DOCUMENTO_BANCARIO": {
             "palabras_clave": [
@@ -183,41 +161,28 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
                 "DOCUMENTO BANCARIO",
                 "ESTADO DE CUENTA",
                 "CUENTA BANCARIA",
-                "BANK STATEMENT",
-                "BANK ACCOUNT",
-                "BANK ACCOUNT NUMBER",
-                "ACCOUNT NUMBER",
-                "BANK DETAILS",
-                "BANK INFORMATION",
                 "CLABE",
-                "TITULAR",
-                "ACCOUNT HOLDER"
+                "TITULAR"
             ],
             "minimo_coincidencias": 1
         },
 
         "SEGURIDAD_SOCIAL": {
-    "palabras_clave": [
-        "INSTITUTO MEXICANO DEL SEGURO SOCIAL",
-        "IMSS",
-        "NÚMERO DE SEGURIDAD SOCIAL",
-        "NUMERO DE SEGURIDAD SOCIAL",
-        "NSS",
-        "DOCUMENTO DE SEGURIDAD SOCIAL",
-        "SEGURIDAD SOCIAL",
-        "NÚMERO DE AFILIACIÓN",
-        "NUMERO DE AFILIACION",
-        "AFILIACIÓN",
-        "AFILIACION",
-        "AFILIADO",
-        "COLOMBIA",
-        "SOCIAL SECURITY",
-        "SOCIAL SECURITY RECORD",
-        "SOCIAL SECURITY NUMBER",
-        "SSN",
-        "UNITED STATES"
-    ],
-    "minimo_coincidencias": 1
+            "palabras_clave": [
+                "INSTITUTO MEXICANO DEL SEGURO SOCIAL",
+                "IMSS",
+                "NÚMERO DE SEGURIDAD SOCIAL",
+                "NUMERO DE SEGURIDAD SOCIAL",
+                "NSS",
+                "DOCUMENTO DE SEGURIDAD SOCIAL",
+                "SEGURIDAD SOCIAL",
+                "NÚMERO DE AFILIACIÓN",
+                "NUMERO DE AFILIACION",
+                "AFILIACIÓN",
+                "AFILIACION",
+                "AFILIADO"
+            ],
+            "minimo_coincidencias": 1
         }
     }
 

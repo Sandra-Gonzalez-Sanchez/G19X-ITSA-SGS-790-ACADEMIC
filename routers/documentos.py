@@ -22,6 +22,7 @@ from services.validacion_service import (
     comparar_nombres,
     comparar_fechas,
     comparar_curp,
+    comparar_rfc,
     validar_tipo_documento
 )
 from services.ia_validacion import validar_documento_con_ia
@@ -540,7 +541,6 @@ def subir_documento(
             print("VALIDACIÓN CURP ↔ INE:")
             print("CURP:", resultado_curp)
 
-
     if documento_acta and documento_rfc:
 
         datos_acta = db.query(DatoExtraido).filter(
@@ -556,6 +556,7 @@ def subir_documento(
                 datos_acta.nombre,
                 datos_rfc.nombre
             )
+
             resultado_fecha_rfc = comparar_fechas(
                 datos_acta.fecha_nacimiento,
                 datos_rfc.fecha_nacimiento
@@ -571,6 +572,7 @@ def subir_documento(
                 valor_comparado=datos_rfc.nombre,
                 resultado=resultado_nombre_rfc
             )
+
             guardar_validacion(
                 db=db,
                 empleado_id=empleado.id,
@@ -774,7 +776,7 @@ Validacion.empleado_id == empleado.id,
                 if "CURP" not in tipos_mensaje:
                     motivos.append(
                         "La CURP del documento no coincide "
-                        "con la registrada."
+                        "con la que se muestra en la INE."
                     )
                     tipos_mensaje.add("CURP")
 
@@ -828,7 +830,7 @@ Validacion.empleado_id == empleado.id,
                     if "CURP" not in tipos_mensaje:
                         motivos.append(
                             "La CURP del documento no coincide "
-                            "con la registrada."
+                            "con la que se muestra en la INE."
                         )
                         tipos_mensaje.add("CURP")
 
@@ -1272,7 +1274,7 @@ def obtener_mis_documentos(
                             "campo": "CURP",
                             "motivo": (
                                 "La CURP del documento no coincide "
-                                "con la registrada."
+                                "con la que se muestra en la INE."
                             ),
                             "valor_documento": validacion.valor_origen,
                             "valor_referencia": validacion.valor_comparado,

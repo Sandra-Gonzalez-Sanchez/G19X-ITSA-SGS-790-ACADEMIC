@@ -3,7 +3,7 @@
 Sistema web para la gestión de documentación requerida durante el proceso
 de ingreso de personal. Permite registrar empleados, enviar invitaciones,
 recibir documentos en formato PDF, procesarlos mediante OCR y realizar
-validaciones  mediante Inteligencia Artificial.
+validaciones mediante Inteligencia Artificial.
 
 
 ## Tecnologías utilizadas
@@ -87,6 +87,9 @@ principales del sistema:
 
 ## Documentos gestionados
 
+El sistema está enfocado en el procesamiento y validación
+de documentos oficiales de México.
+
 El sistema contempla los siguientes documentos:
 
 - Acta de nacimiento
@@ -96,6 +99,9 @@ El sistema contempla los siguientes documentos:
 - Comprobante de domicilio
 - Documento bancario para nómina
 - Documento de Seguridad Social (opcional).
+
+Los documentos emitidos en otros países o que no correspondan con los formatos
+contemplados por el sistema no deberán considerarse como documentos validados.
 
 ## Configuración
 

@@ -299,6 +299,8 @@ def extraer_nombre(textos):
         "NAME",
         "NOMBRE / RAZÓN",
         "NOMBRE/RAZÓN",
+        "NOMBRE(S)",
+        "NOMBRE(S):",
         "TITULAR",
         "AFILIADO"
     ]
@@ -312,42 +314,87 @@ def extraer_nombre(textos):
         "SEXO F"
     ]
 
-    for texto in textos:
-        texto_limpio = texto.strip()
+    # CASO ESPECÍFICO DE CONSTANCIA RFC
+    for i, texto in enumerate(textos):
+        texto_mayusculas = texto.strip().upper()
 
-        if (
-                "<" in texto_limpio
-                and "<<" in texto_limpio
-                and texto_limpio.count("<") >= 4
-        ):
-            partes = texto_limpio.split("<")
-
-            partes_limpias = [
-                parte.strip()
-                for parte in partes
-                if parte.strip()
-            ]
-
-            if len(partes_limpias) >= 3:
-                apellido_paterno = partes_limpias[0]
-                apellido_materno = partes_limpias[1]
-                nombre = partes_limpias[2]
+        if texto_mayusculas == "NOMBRE, DENOMINACIÓN O RAZÓN":
+            for texto_anterior in reversed(textos[max(0, i - 3):i]):
+                candidato = texto_anterior.strip()
 
                 if (
-                        apellido_paterno.replace(" ", "").isalpha()
-                        and apellido_materno.replace(" ", "").isalpha()
-                        and nombre.replace(" ", "").isalpha()
+                    candidato
+                    and candidato.upper() != "SOCIAL"
+                    and candidato.replace(" ", "").isalpha()
+                    and len(candidato.split()) >= 2
                 ):
-                    return f"{nombre} {apellido_paterno} {apellido_materno}"
-
+                    return candidato
 
     for i, texto in enumerate(textos):
         texto_limpio = texto.strip()
-        texto_mayusculas = texto_limpio.upper()
+        texto_mayusculas = texto_limpio.upper().rstrip(":")
 
-        etiqueta_normalizada = texto_mayusculas.rstrip(":")
+        if texto_mayusculas == "NOMBRE":
+            siguientes = [
+                t.strip()
+                for t in textos[i + 1:i + 7]
+                if t.strip()
+            ]
 
-        if etiqueta_normalizada in etiquetas_nombre:
+            if (
+                siguientes
+                and siguientes[0].upper().startswith("SEXO")
+            ):
+                candidatos = []
+
+                for candidato in siguientes[1:]:
+                    candidato_mayusculas = candidato.upper().rstrip(":")
+
+                    if candidato_mayusculas in [
+                        "DOMICILIO",
+                        "CURP",
+                        "AÑO DE REGISTRO",
+                        "SECCIÓN",
+                        "VIGENCIA",
+                        "FECHA DE NACIMIENTO",
+                        "PRIMER APELLIDO",
+                        "SEGUNDO APELLIDO"
+                    ]:
+                        break
+
+                    if (
+                        candidato
+                        and candidato.replace(" ", "").isalpha()
+                    ):
+                        candidatos.append(candidato)
+
+                if len(candidatos) >= 3:
+                    return " ".join([
+                        candidatos[2],
+                        candidatos[0],
+                        candidatos[1]
+                    ])
+
+        if texto_mayusculas in ["NOMBRE(S)", "NOMBRE(S):"]:
+            if i >= 3:
+                nombre = textos[i - 3].strip()
+                apellido_paterno = textos[i - 2].strip()
+                apellido_materno = textos[i - 1].strip()
+
+                valores = [
+                    nombre,
+                    apellido_paterno,
+                    apellido_materno
+                ]
+
+                if all(
+                    valor
+                    and valor.replace(" ", "").isalpha()
+                    for valor in valores
+                ):
+                    return " ".join(valores)
+
+        if texto_mayusculas in etiquetas_nombre:
             for siguiente_texto in textos[i + 1:i + 5]:
                 candidato = siguiente_texto.strip()
                 candidato_mayusculas = candidato.upper().rstrip(":")
@@ -364,13 +411,14 @@ def extraer_nombre(textos):
                     "FECHA DE NACIMIENTO",
                     "AÑO DE REGISTRO",
                     "SECCIÓN",
-                    "VIGENCIA"
+                    "VIGENCIA",
+                    "PRIMER APELLIDO",
+                    "SEGUNDO APELLIDO"
                 ]:
                     continue
 
                 if candidato:
                     return candidato
-
 
         for etiqueta in etiquetas_nombre:
             if texto_mayusculas.startswith(etiqueta + ":"):

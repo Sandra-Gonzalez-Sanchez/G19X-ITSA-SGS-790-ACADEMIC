@@ -70,9 +70,6 @@ def validar_documento_con_ia(
             if documento_referencia != "INE":
                 continue
 
-        if campo == "RFC":
-            continue
-
         comparaciones.append({
             "campo": campo,
             "valor_documento": valor_documento,
