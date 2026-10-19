@@ -314,22 +314,61 @@ def extraer_nombre(textos):
         "SEXO F"
     ]
 
-    # CASO ESPECÍFICO DE CONSTANCIA RFC
+    texto_completo = " ".join(textos).upper()
+
+    # Detectar nombre en documentos de CFE
+    if (
+        "COMISIÓN FEDERAL DE ELECTRICIDAD" in texto_completo
+        or "COMISION FEDERAL DE ELECTRICIDAD" in texto_completo
+    ):
+        for i, texto in enumerate(textos):
+            candidato = texto.strip()
+
+            if not candidato:
+                continue
+
+            if (
+                len(candidato.split()) >= 3
+                and candidato.replace(" ", "").isalpha()
+                and i + 1 < len(textos)
+                and textos[i + 1].strip().upper() == "TOTAL A PAGAR:"
+            ):
+                return candidato
+
+        for i, texto in enumerate(textos):
+            texto_mayusculas = texto.strip().upper()
+
+            if texto_mayusculas == "NOMBRE, DENOMINACIÓN O RAZÓN":
+                for texto_anterior in reversed(textos[max(0, i - 3):i]):
+                    candidato = texto_anterior.strip()
+
+                    if (
+                        candidato
+                        and candidato.upper() != "SOCIAL"
+                        and candidato.replace(" ", "").isalpha()
+                        and len(candidato.split()) >= 2
+                    ):
+                        return candidato
+
     for i, texto in enumerate(textos):
         texto_mayusculas = texto.strip().upper()
 
-        if texto_mayusculas == "NOMBRE, DENOMINACIÓN O RAZÓN":
-            for texto_anterior in reversed(textos[max(0, i - 3):i]):
-                candidato = texto_anterior.strip()
+        if (
+                "NOMBRE(S)" in texto_mayusculas
+                and "PRIMER APELLIDO" in texto_mayusculas
+                and "SEGUNDO APELLIDO" in texto_mayusculas
+        ):
+            for siguiente_texto in textos[i + 1:i + 4]:
+                candidato = siguiente_texto.strip()
 
                 if (
-                    candidato
-                    and candidato.upper() != "SOCIAL"
-                    and candidato.replace(" ", "").isalpha()
-                    and len(candidato.split()) >= 2
+                        candidato
+                        and len(candidato.split()) >= 3
+                        and candidato.replace(" ", "").isalpha()
                 ):
                     return candidato
 
+    # Detectar nombre en documentos con estructura NOMBRE / SEXO
     for i, texto in enumerate(textos):
         texto_limpio = texto.strip()
         texto_mayusculas = texto_limpio.upper().rstrip(":")

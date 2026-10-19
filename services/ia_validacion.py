@@ -17,10 +17,13 @@ def validar_documento_con_ia(
 
     comparaciones = []
 
-
     nombre_documento = datos_extraidos.get("nombre")
 
-    if nombre_documento and nombre_empleado:
+    if (
+            tipo_documento != "COMPROBANTE_DOMICILIO"
+            and nombre_documento
+            and nombre_empleado
+    ):
         comparaciones.append({
             "campo": "NOMBRE",
             "valor_documento": nombre_documento,

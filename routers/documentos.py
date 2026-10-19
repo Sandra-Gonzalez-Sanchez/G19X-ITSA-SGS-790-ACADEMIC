@@ -626,10 +626,8 @@ def subir_documento(
 
     requiere_revision = False
 
-
-
     db.query(Validacion).filter(
-Validacion.empleado_id == empleado.id,
+        Validacion.empleado_id == empleado.id,
         Validacion.documento_origen == tipo_documento,
         Validacion.origen_validacion == "IA"
     ).delete(synchronize_session=False)
@@ -643,11 +641,19 @@ Validacion.empleado_id == empleado.id,
     validaciones_para_ia = []
 
     for validacion in validaciones_documento:
+
         participa_documento = (
-                validacion.documento_origen == tipo_documento or
-                validacion.documento_comparado == tipo_documento
+            validacion.documento_origen == tipo_documento or
+            validacion.documento_comparado == tipo_documento
         )
+
         if not participa_documento:
+            continue
+
+        if (
+            tipo_documento == "COMPROBANTE_DOMICILIO"
+            and validacion.campo == "NOMBRE_EMPLEADO"
+        ):
             continue
 
         validaciones_para_ia.append({
@@ -728,7 +734,6 @@ Validacion.empleado_id == empleado.id,
         Validacion.empleado_id == empleado.id
     ).all()
 
-    mensaje_revision = None
 
     mensaje_revision = None
     motivos = []
@@ -1252,19 +1257,38 @@ def obtener_mis_documentos(
 
                 elif campo in ("NOMBRE", "NOMBRE_EMPLEADO"):
 
-                    if "NOMBRE" not in tipos_mensaje:
-                        motivos_revision.append({
-                            "campo": "NOMBRE",
-                            "motivo": (
-                                "El nombre del documento no coincide "
-                                "con el nombre registrado para el empleado."
-                            ),
-                            "valor_documento": validacion.valor_origen,
-                            "valor_referencia": validacion.valor_comparado,
-                            "origen_validacion": validacion.origen_validacion
-                        })
+                    if documento.tipo_documento == "COMPROBANTE_DOMICILIO":
 
-                        tipos_mensaje.add("NOMBRE")
+                        if "DOMICILIO" not in tipos_mensaje:
+                            motivos_revision.append({
+                                "campo": "DOMICILIO",
+                                "motivo": (
+                                    "Comprobante de domicilio identificado correctamente. "
+                                    "El nombre del titular del comprobante es diferente "
+                                    "al nombre del empleado."
+                                ),
+                                "valor_documento": validacion.valor_origen,
+                                "valor_referencia": validacion.valor_comparado,
+                                "origen_validacion": validacion.origen_validacion
+                            })
+
+                            tipos_mensaje.add("DOMICILIO")
+
+                    else:
+
+                        if "NOMBRE" not in tipos_mensaje:
+                            motivos_revision.append({
+                                "campo": "NOMBRE",
+                                "motivo": (
+                                    "El nombre del documento no coincide "
+                                    "con el nombre registrado para el empleado."
+                                ),
+                                "valor_documento": validacion.valor_origen,
+                                "valor_referencia": validacion.valor_comparado,
+                                "origen_validacion": validacion.origen_validacion
+                            })
+
+                            tipos_mensaje.add("NOMBRE")
 
 
                 elif campo == "CURP":
