@@ -284,6 +284,39 @@ def subir_documento(
     print("VALIDACIÓN DEL TIPO DE DOCUMENTO:")
     print(tipo_documento, "->", resultado_tipo_documento)
 
+    if resultado_tipo_documento == "NO COMPATIBLE":
+        documento.estado = "PENDIENTE"
+
+        mensaje_tipo_documento = (
+            "El documento no es compatible con los formatos admitidos."
+        )
+
+        guardar_validacion(
+            db=db,
+            empleado_id=empleado.id,
+            campo="TIPO_DOCUMENTO",
+            documento_origen=tipo_documento,
+            documento_comparado=tipo_documento,
+            valor_origen=archivo.filename,
+            valor_comparado="Formatos admitidos",
+            resultado="NO COINCIDE",
+            motivo=mensaje_tipo_documento
+        )
+
+
+        db.commit()
+        db.refresh(documento)
+
+        return {
+            "mensaje": mensaje_tipo_documento,
+            "empleado_id": empleado.id,
+            "tipo_documento": tipo_documento,
+            "estado": documento.estado,
+            "archivo": archivo.filename,
+            "motivo_revision": mensaje_tipo_documento,
+            "documento_aceptado": False
+        }
+
     if resultado_tipo_documento == "REQUIERE REVISIÓN":
         documento.estado = "EN REVISION"
 
@@ -1377,5 +1410,47 @@ def marcar_seguridad_social_no_aplica(
     return {
         "mensaje": "Seguridad Social marcada como NO APLICA",
         "estado": documento.estado
+    }
+
+@router.delete("/empleado/seguridad-social/no-aplica")
+def quitar_seguridad_social_no_aplica(
+    db: Session = Depends(get_db),
+    datos_empleado: dict = Depends(verificar_empleado)
+):
+    usuario_id = int(datos_empleado.get("sub"))
+
+    empleado = db.query(Empleado).filter(
+        Empleado.usuario_id == usuario_id
+    ).first()
+
+    if not empleado:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontró información del empleado"
+        )
+
+    documento = db.query(Documento).filter(
+        Documento.empleado_id == empleado.id,
+        Documento.tipo_documento == "SEGURIDAD_SOCIAL"
+    ).first()
+
+    if not documento:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontró el documento de Seguridad Social"
+        )
+
+    if documento.estado != "NO APLICA":
+        raise HTTPException(
+            status_code=400,
+            detail="El documento de Seguridad Social no está marcado como NO APLICA"
+        )
+
+    db.delete(documento)
+    db.commit()
+
+    return {
+        "mensaje": "Seguridad Social nuevamente disponible para cargar",
+        "estado": "PENDIENTE"
     }
 

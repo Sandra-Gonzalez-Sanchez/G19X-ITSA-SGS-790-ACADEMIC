@@ -488,6 +488,36 @@ const marcarSeguridadSocialNoAplica = async () => {
   }
 }
 
+const quitarSeguridadSocialNoAplica = async () => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+    const respuesta = await fetch(
+      'http://127.0.0.1:8001/documentos/empleado/seguridad-social/no-aplica',
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+
+    const datos = await respuesta.json()
+
+    if (respuesta.ok) {
+      setMensajeDocumento('Seguridad Social nuevamente disponible para cargar.')
+      await cargarDocumentos()
+    } else {
+      setMensajeDocumento(
+        datos.detail || 'No fue posible habilitar el documento.'
+      )
+    }
+  } catch (error) {
+    console.error('Error al habilitar Seguridad Social:', error)
+    setMensajeDocumento('No fue posible conectar con el servidor.')
+  }
+}
+
 
 const registrarEmpleado = async () => {
 
@@ -2666,25 +2696,23 @@ if (rol === 'EMPLEADO') {
         <strong>{documentoRequerido.nombre}</strong>
         <p>{documentoRequerido.descripcion}</p>
 
-        {documentoGuardado?.estado === 'EN REVISION' &&
-  documentoGuardado?.motivo_revision && (
-    <div className="document-review-message">
-      <strong>Corrección requerida:</strong>
+      {documentoGuardado?.motivo_revision && (
+  <div className="document-review-message">
+    <strong>Motivo:</strong>
 
-      <p>
-        {documentoGuardado.motivo_revision}
-      </p>
-    </div>
+    <p>
+      {documentoGuardado.motivo_revision}
+    </p>
+  </div>
 )}
 
       </div>
 
-      <div className="document-actions">
-        <span className="status status-pending">
-          {documentoGuardado?.estado === 'EN REVISION'
-            ? 'CORRECCIÓN REQUERIDA'
-            : documentoGuardado?.estado || 'PENDIENTE'}
-        </span>
+         {!documentoGuardado?.motivo_revision && (
+  <span className="status status-pending">
+    {documentoGuardado?.estado || 'PENDIENTE'}
+  </span>
+)}
 
         {documentoGuardado &&
           documentoGuardado.estado !== 'NO APLICA' && (
@@ -2709,7 +2737,7 @@ if (rol === 'EMPLEADO') {
         )}
 
 
-        {documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
+    {documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
   !documentoGuardado && (
     <button
       className="secondary-button"
@@ -2717,7 +2745,17 @@ if (rol === 'EMPLEADO') {
     >
       No cuento con este documento
     </button>
-)}
+  )}
+
+{documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
+  documentoGuardado?.estado === 'NO APLICA' && (
+    <button
+      className="secondary-button"
+      onClick={quitarSeguridadSocialNoAplica}
+    >
+      Sí cuento con este documento
+    </button>
+  )}
 
 
         {documentoGuardado?.estado !== 'NO APLICA' && (
@@ -2767,12 +2805,10 @@ if (rol === 'EMPLEADO') {
 )}
 
       </div>
-    </div>
   )
 })}
-
+    </div>
   </div>
-</div>
 </div>
 )}
 

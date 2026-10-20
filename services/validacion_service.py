@@ -91,9 +91,74 @@ def comparar_rfc(rfc_1, rfc_2):
 
     return "NO COINCIDE"
 
+def detectar_documento_no_compatible(tipo_documento, textos_detectados):
+    if not textos_detectados:
+        return False
+
+    texto_completo = " ".join(textos_detectados).upper()
+
+    indicadores_mexicanos = {
+        "ACTA_NACIMIENTO": [
+            "ESTADOS UNIDOS MEXICANOS",
+            "REGISTRO CIVIL",
+            "ENTIDAD FEDERATIVA"
+        ],
+        "CURP": [
+            "CLAVE ÚNICA DE REGISTRO DE POBLACIÓN",
+            "CLAVE UNICA DE REGISTRO DE POBLACION",
+            "CURP"
+        ],
+        "INE": [
+            "INSTITUTO NACIONAL ELECTORAL",
+            "CREDENCIAL PARA VOTAR"
+        ],
+        "RFC": [
+            "REGISTRO FEDERAL DE CONTRIBUYENTES",
+            "CONSTANCIA DE SITUACIÓN FISCAL",
+            "CONSTANCIA DE SITUACION FISCAL"
+        ],
+        "COMPROBANTE_DOMICILIO": [
+            "COMISIÓN FEDERAL DE ELECTRICIDAD",
+            "COMISION FEDERAL DE ELECTRICIDAD",
+            "CFE",
+            "RECIBO DE LUZ"
+        ],
+        "DOCUMENTO_BANCARIO": [
+            "CLABE",
+            "CUENTA CLABE",
+            "DATOS BANCARIOS"
+        ],
+        "SEGURIDAD_SOCIAL": [
+            "INSTITUTO MEXICANO DEL SEGURO SOCIAL",
+            "IMSS",
+            "NÚMERO DE SEGURIDAD SOCIAL",
+            "NUMERO DE SEGURIDAD SOCIAL",
+            "NSS"
+        ]
+    }
+
+    indicadores = indicadores_mexicanos.get(tipo_documento, [])
+
+    if not indicadores:
+        return False
+
+    coincidencias = sum(
+        1
+        for indicador in indicadores
+        if indicador in texto_completo
+    )
+
+    return coincidencias == 0
+
 def validar_tipo_documento(tipo_documento, textos_detectados):
     if not textos_detectados:
         return "REQUIERE REVISIÓN"
+
+    if detectar_documento_no_compatible(
+        tipo_documento,
+        textos_detectados
+    ):
+        return "NO COMPATIBLE"
 
     texto_completo = " ".join(textos_detectados).upper()
 
