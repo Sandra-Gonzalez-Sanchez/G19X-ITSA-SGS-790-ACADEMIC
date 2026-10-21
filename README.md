@@ -180,6 +180,14 @@ Las principales dependencias utilizadas son:
 - PaddleOCR 3.7.0
 - PaddlePaddle 3.3.1
 
+La ruta del intérprete de Python utilizado para ejecutar el OCR se configura mediante la variable de entorno `OCR_PYTHON`.
+
+Ejemplo:
+
+```text
+OCR_PYTHON=.venv_ocr/Scripts/python.exe
+```
+
 ### 4. Configurar PostgreSQL
 
 Crear la base de datos utilizada por el sistema:

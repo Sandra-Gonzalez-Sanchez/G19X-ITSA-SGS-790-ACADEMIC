@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import os
 
 from database.database import Base, engine
 from models.empleado import Empleado
@@ -18,6 +19,8 @@ from routers.documentos import router as documentos_router
 from routers.catalogos import router as catalogos_router
 from fastapi.middleware.cors import CORSMiddleware
 
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -30,7 +33,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
+        FRONTEND_URL,
         "http://127.0.0.1:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",

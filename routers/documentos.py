@@ -23,7 +23,10 @@ from services.validacion_service import (
     comparar_fechas,
     comparar_curp,
     comparar_rfc,
-    validar_tipo_documento
+    validar_tipo_documento,
+    validar_datos_esenciales,
+    validar_documentos_cruzados,
+    guardar_validacion
 )
 from services.ia_validacion import validar_documento_con_ia
 
@@ -34,149 +37,6 @@ router = APIRouter(
     tags=["Documentos"]
 )
 
-def guardar_validacion(
-    db,
-    empleado_id,
-    campo,
-    documento_origen,
-    documento_comparado,
-    valor_origen,
-    valor_comparado,
-    resultado,
-    origen_validacion="REGLA",
-    motivo=None
-):
-    validacion = db.query(Validacion).filter(
-        Validacion.empleado_id == empleado_id,
-        Validacion.campo == campo,
-        Validacion.documento_origen == documento_origen,
-        Validacion.documento_comparado == documento_comparado
-    ).first()
-
-    if validacion:
-        validacion.valor_origen = valor_origen
-        validacion.valor_comparado = valor_comparado
-        validacion.resultado = resultado
-        validacion.origen_validacion = origen_validacion
-        validacion.motivo = motivo
-
-    else:
-        validacion = Validacion(
-            empleado_id=empleado_id,
-            campo=campo,
-            documento_origen=documento_origen,
-            documento_comparado=documento_comparado,
-            valor_origen=valor_origen,
-            valor_comparado=valor_comparado,
-            resultado=resultado,
-            origen_validacion = origen_validacion,
-            motivo = motivo
-        )
-
-        db.add(validacion)
-
-    db.commit()
-
-def validar_datos_esenciales(tipo_documento, datos):
-    if not datos:
-        return False
-
-    if tipo_documento == "ACTA_NACIMIENTO":
-        return bool(
-            datos.nombre and
-            datos.fecha_nacimiento
-        )
-
-    if tipo_documento == "CURP":
-        return bool(
-            datos.nombre and
-            datos.fecha_nacimiento and
-            datos.curp and
-            (
-                    re.fullmatch(
-                        r"[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d",
-                        datos.curp.upper()
-                    )
-                    or
-                    re.fullmatch(
-                        r"US-TEST-[A-Z]+-\d{8}",
-                        datos.curp.upper()
-                    )
-            ) and
-            datos.estado_formato_curp not in (
-                "REQUIERE REVISIÓN",
-                "NO DETECTADO"
-            )
-        )
-
-    if tipo_documento == "INE":
-        return bool(
-            datos.nombre and
-            datos.fecha_nacimiento
-        )
-
-    if tipo_documento == "RFC":
-        identificador_fiscal_valido = (
-                (
-                        datos.rfc and
-                        len(datos.rfc) in (12, 13) and
-                        datos.estado_formato_rfc not in (
-                            "REQUIERE REVISIÓN",
-                            "NO DETECTADO"
-                        )
-                )
-                or
-                (
-                        datos.nss and
-                        re.fullmatch(
-                            r"\d{3}-\d{2}-\d{4}",
-                            datos.nss
-                        )
-                )
-        )
-
-        return bool(
-            datos.nombre and
-            datos.fecha_nacimiento and
-            identificador_fiscal_valido
-        )
-
-    if tipo_documento == "COMPROBANTE_DOMICILIO":
-        return bool(
-            datos.domicilio
-        )
-
-    if tipo_documento == "DOCUMENTO_BANCARIO":
-        return bool(
-            datos.clabe and
-            datos.clabe.isdigit() and
-            len(datos.clabe) in (12, 18)
-        )
-
-
-    if tipo_documento == "SEGURIDAD_SOCIAL":
-        return bool(
-            datos.nombre and
-            datos.nss and
-            (
-                    (
-                            datos.nss.isdigit() and
-                            len(datos.nss) == 11
-                    )
-                    or
-                    re.fullmatch(
-                        r"SS-[A-Z]{2}-\d{4}-\d{4}",
-                        datos.nss.upper()
-                    )
-                    or
-                    re.fullmatch(
-                        r"\d{3}-\d{2}-\d{4}",
-                        datos.nss
-                    )
-            )
-        )
-
-    return False
 
 @router.post("/subir")
 def subir_documento(
@@ -254,8 +114,34 @@ def subir_documento(
         )
 
     if documento_existente:
+
+        db.query(DatoExtraido).filter(
+            DatoExtraido.documento_id == documento_existente.id
+        ).delete(synchronize_session=False)
+
+        db.query(Validacion).filter(
+            Validacion.empleado_id == empleado.id,
+            Validacion.documento_origen == tipo_documento
+        ).delete(synchronize_session=False)
+
+        db.query(Validacion).filter(
+            Validacion.empleado_id == empleado.id,
+            Validacion.documento_comparado == tipo_documento
+        ).delete(synchronize_session=False)
+
+        if (
+                documento_existente.ruta_archivo
+                and os.path.exists(documento_existente.ruta_archivo)
+        ):
+            os.remove(documento_existente.ruta_archivo)
+
         documento_existente.ruta_archivo = ruta_archivo
         documento_existente.estado = "PENDIENTE"
+
+        db.commit()
+        db.refresh(documento_existente)
+
+        documento = documento_existente
 
         db.commit()
         db.refresh(documento_existente)
@@ -411,7 +297,6 @@ def subir_documento(
     print(datos_ocr)
     print("DOCUMENTO ID:", documento.id)
 
-
     documento_acta = db.query(Documento).filter(
         Documento.empleado_id == empleado.id,
         Documento.tipo_documento == "ACTA_NACIMIENTO"
@@ -432,195 +317,14 @@ def subir_documento(
         Documento.tipo_documento == "RFC"
     ).first()
 
-    if documento_acta and documento_curp:
-
-        datos_acta = db.query(DatoExtraido).filter(
-            DatoExtraido.documento_id == documento_acta.id
-        ).first()
-
-        datos_curp = db.query(DatoExtraido).filter(
-            DatoExtraido.documento_id == documento_curp.id
-        ).first()
-
-        if datos_acta and datos_curp:
-
-            resultado_nombre = comparar_nombres(
-                datos_acta.nombre,
-                datos_curp.nombre
-            )
-
-            resultado_fecha = comparar_fechas(
-                datos_acta.fecha_nacimiento,
-                datos_curp.fecha_nacimiento
-            )
-
-            guardar_validacion(
-                db=db,
-                empleado_id=empleado.id,
-                campo="NOMBRE",
-                documento_origen="ACTA_NACIMIENTO",
-                documento_comparado="CURP",
-                valor_origen=datos_acta.nombre,
-                valor_comparado=datos_curp.nombre,
-                resultado=resultado_nombre
-            )
-
-            guardar_validacion(
-                db=db,
-                empleado_id=empleado.id,
-                campo="FECHA_NACIMIENTO",
-                documento_origen="ACTA_NACIMIENTO",
-                documento_comparado="CURP",
-                valor_origen=datos_acta.fecha_nacimiento,
-                valor_comparado=datos_curp.fecha_nacimiento,
-                resultado=resultado_fecha,
-                motivo=(
-                    "La fecha de nacimiento no coincide entre "
-                    "ACTA_NACIMIENTO y CURP."
-                ) if resultado_fecha == "NO COINCIDE" else None
-            )
-
-            print("VALIDACIÓN ACTA ↔ CURP:")
-            print("NOMBRE:", resultado_nombre)
-            print("FECHA DE NACIMIENTO:", resultado_fecha)
-
-
-    if documento_acta and documento_ine:
-
-        datos_acta = db.query(DatoExtraido).filter(
-            DatoExtraido.documento_id == documento_acta.id
-        ).first()
-
-        datos_ine = db.query(DatoExtraido).filter(
-            DatoExtraido.documento_id == documento_ine.id
-        ).first()
-
-        if datos_acta and datos_ine:
-
-            resultado_nombre = comparar_nombres(
-                datos_acta.nombre,
-                datos_ine.nombre
-            )
-
-            resultado_fecha = comparar_fechas(
-                datos_acta.fecha_nacimiento,
-                datos_ine.fecha_nacimiento
-            )
-
-            guardar_validacion(
-                db=db,
-                empleado_id=empleado.id,
-                campo="NOMBRE",
-                documento_origen="ACTA_NACIMIENTO",
-                documento_comparado="INE",
-                valor_origen=datos_acta.nombre,
-                valor_comparado=datos_ine.nombre,
-                resultado=resultado_nombre,
-                motivo=None
-            )
-
-            guardar_validacion(
-                db=db,
-                empleado_id=empleado.id,
-                campo="FECHA_NACIMIENTO",
-                documento_origen="ACTA_NACIMIENTO",
-                documento_comparado="INE",
-                valor_origen=datos_acta.fecha_nacimiento,
-                valor_comparado=datos_ine.fecha_nacimiento,
-                resultado=resultado_fecha,
-                motivo=(
-                    "La fecha de nacimiento no coincide entre "
-                    "ACTA_NACIMIENTO y INE."
-                ) if resultado_fecha == "NO COINCIDE" else None
-            )
-
-            print("VALIDACIÓN ACTA ↔ INE:")
-            print("NOMBRE:", resultado_nombre)
-            print("FECHA DE NACIMIENTO:", resultado_fecha)
-
-
-    if documento_curp and documento_ine:
-
-        datos_curp = db.query(DatoExtraido).filter(
-            DatoExtraido.documento_id == documento_curp.id
-        ).first()
-
-        datos_ine = db.query(DatoExtraido).filter(
-            DatoExtraido.documento_id == documento_ine.id
-        ).first()
-
-        if datos_curp and datos_ine:
-
-            resultado_curp = comparar_curp(
-                datos_curp.curp,
-                datos_ine.curp
-            )
-
-            guardar_validacion(
-                db=db,
-                empleado_id=empleado.id,
-                campo="CURP",
-                documento_origen="CURP",
-                documento_comparado="INE",
-                valor_origen=datos_curp.curp,
-                valor_comparado=datos_ine.curp,
-                resultado=resultado_curp,
-                motivo=(
-                    "La CURP no coincide entre "
-                    "CURP y INE."
-                ) if resultado_curp == "NO COINCIDE" else None
-            )
-
-            print("VALIDACIÓN CURP ↔ INE:")
-            print("CURP:", resultado_curp)
-
-    if documento_acta and documento_rfc:
-
-        datos_acta = db.query(DatoExtraido).filter(
-            DatoExtraido.documento_id == documento_acta.id
-        ).first()
-
-        datos_rfc = db.query(DatoExtraido).filter(
-            DatoExtraido.documento_id == documento_rfc.id
-        ).first()
-
-        if datos_acta and datos_rfc:
-            resultado_nombre_rfc = comparar_nombres(
-                datos_acta.nombre,
-                datos_rfc.nombre
-            )
-
-            resultado_fecha_rfc = comparar_fechas(
-                datos_acta.fecha_nacimiento,
-                datos_rfc.fecha_nacimiento
-            )
-
-            guardar_validacion(
-                db=db,
-                empleado_id=empleado.id,
-                campo="NOMBRE",
-                documento_origen="ACTA_NACIMIENTO",
-                documento_comparado="RFC",
-                valor_origen=datos_acta.nombre,
-                valor_comparado=datos_rfc.nombre,
-                resultado=resultado_nombre_rfc
-            )
-
-            guardar_validacion(
-                db=db,
-                empleado_id=empleado.id,
-                campo="FECHA_NACIMIENTO",
-                documento_origen="ACTA_NACIMIENTO",
-                documento_comparado="RFC",
-                valor_origen=datos_acta.fecha_nacimiento,
-                valor_comparado=datos_rfc.fecha_nacimiento,
-                resultado=resultado_fecha_rfc,
-                motivo=None
-            )
-
-            print("VALIDACIÓN ACTA ↔ RFC:")
-            print("NOMBRE:", resultado_nombre_rfc)
-            print("FECHA DE NACIMIENTO:", resultado_fecha_rfc)
+    validar_documentos_cruzados(
+        db=db,
+        empleado_id=empleado.id,
+        documento_acta=documento_acta,
+        documento_curp=documento_curp,
+        documento_ine=documento_ine,
+        documento_rfc=documento_rfc,
+    )
 
     datos_documento = db.query(DatoExtraido).filter(
         DatoExtraido.documento_id == documento.id

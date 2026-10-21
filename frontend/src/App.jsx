@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+const API_URL = import.meta.env.VITE_API_URL
 function App() {
   const [correo, setCorreo] = useState('')
   const [password, setPassword] = useState('')
@@ -8,7 +9,6 @@ function App() {
 const [mostrarRecuperacion, setMostrarRecuperacion] = useState(false)
 const [correoRecuperacion, setCorreoRecuperacion] = useState('')
 const [mensajeRecuperacion, setMensajeRecuperacion] = useState('')
-const [enlaceRecuperacion, setEnlaceRecuperacion] = useState('')
 
 const [esRestablecimiento, setEsRestablecimiento] = useState(
   rutaActual.startsWith('/restablecer-password/')
@@ -127,7 +127,7 @@ const solicitarRecuperacion = async () => {
 
   try {
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/usuarios/recuperar-password',
+      `${API_URL}/usuarios/recuperar-password`,
       {
         method: 'POST',
         headers: {
@@ -143,7 +143,6 @@ const solicitarRecuperacion = async () => {
 
     if (respuesta.ok) {
       setMensajeRecuperacion(datos.mensaje)
-      setEnlaceRecuperacion(datos.enlace)
     } else {
       setMensajeRecuperacion(
         datos.detail || 'No fue posible solicitar la recuperación.'
@@ -167,7 +166,7 @@ const solicitarRecuperacion = async () => {
  console.log("🚨 SE EJECUTÓ iniciarSesion")
   try {
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/usuarios/login',
+      `${API_URL}/usuarios/login`,
       {
         method: 'POST',
         headers: {
@@ -209,7 +208,7 @@ const solicitarRecuperacion = async () => {
 const cargarPerfilEmpleado = async (token) => {
   try {
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/empleados/mi-perfil',
+      `${API_URL}/empleados/mi-perfil`,
       {
         method: 'GET',
         headers: {
@@ -250,7 +249,7 @@ const enviarSolicitudCorreccion = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/solicitudes-correccion/',
+      `${API_URL}/solicitudes-correccion/`,
       {
         method: 'POST',
         headers: {
@@ -304,7 +303,7 @@ const subirDocumento = async () => {
     formData.append('archivo', archivoSeleccionado)
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/documentos/subir',
+      `${API_URL}/documentos/subir`,
       {
         method: 'POST',
         headers: {
@@ -362,7 +361,7 @@ const quitarDocumento = async (documentoId) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/documentos/${documentoId}`,
+      `${API_URL}/documentos/${documentoId}`,
       {
         method: 'DELETE',
         headers: {
@@ -402,7 +401,7 @@ const cargarDocumentos = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/documentos/mis-documentos',
+      `${API_URL}/documentos/mis-documentos`,
       {
         method: 'GET',
         headers: {
@@ -433,7 +432,7 @@ console.log("ROL:", localStorage.getItem('rol'));
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/documentos/archivo/${documentoId}`,
+      `${API_URL}/documentos/archivo/${documentoId}`,
       {
         method: 'GET',
         headers: {
@@ -463,7 +462,7 @@ const marcarSeguridadSocialNoAplica = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/documentos/empleado/seguridad-social/no-aplica',
+      `${API_URL}/documentos/empleado/seguridad-social/no-aplica`,
       {
         method: 'PUT',
         headers: {
@@ -493,7 +492,7 @@ const quitarSeguridadSocialNoAplica = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/documentos/empleado/seguridad-social/no-aplica',
+      `${API_URL}/documentos/empleado/seguridad-social/no-aplica`,
       {
         method: 'DELETE',
         headers: {
@@ -537,7 +536,7 @@ const registrarEmpleado = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/empleados/',
+      `${API_URL}/empleados/`,
       {
         method: 'POST',
         headers: {
@@ -589,7 +588,7 @@ const cargarEmpleados = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/empleados/',
+      `${API_URL}/empleados/`,
       {
         method: 'GET',
         headers: {
@@ -617,7 +616,7 @@ const cambiarEstadoEmpleado = async (empleado) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/empleados/${empleado.id}/estado`,
+      `${API_URL}/empleados/${empleado.id}/estado`,
       {
         method: 'PATCH',
         headers: {
@@ -688,7 +687,7 @@ const cargarAreas = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/catalogos/areas',
+      `${API_URL}/catalogos/areas`,
       {
         method: 'GET',
         headers: {
@@ -716,7 +715,7 @@ const cargarPuestos = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/catalogos/puestos',
+      `${API_URL}/catalogos/puestos`,
       {
         method: 'GET',
         headers: {
@@ -748,7 +747,7 @@ const crearArea = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/catalogos/areas',
+      `${API_URL}/catalogos/areas`,
       {
         method: 'POST',
         headers: {
@@ -787,7 +786,7 @@ const crearPuesto = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/catalogos/puestos',
+      `${API_URL}/catalogos/puestos`,
       {
         method: 'POST',
         headers: {
@@ -823,7 +822,7 @@ const cargarExpediente = async (empleadoId) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/documentos/empleado/${empleadoId}`,
+      `${API_URL}/documentos/empleado/${empleadoId}`,
       {
         method: 'GET',
         headers: {
@@ -853,7 +852,7 @@ const cambiarEstadoDocumento = async (documentoId, accion) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/documentos/${documentoId}/${accion}`,
+      `${API_URL}/documentos/${documentoId}/${accion}`,
       {
         method: 'PUT',
         headers: {
@@ -883,7 +882,7 @@ const cargarSolicitudes = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/solicitudes-correccion/',
+      `${API_URL}/solicitudes-correccion/`,
       {
         method: 'GET',
         headers: {
@@ -911,7 +910,7 @@ const resolverSolicitud = async (solicitudId, accion) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/solicitudes-correccion/${solicitudId}/resolver`,
+      `${API_URL}/solicitudes-correccion/${solicitudId}/resolver`,
       {
         method: 'PUT',
         headers: {
@@ -946,7 +945,7 @@ const enviarInvitacion = async (empleadoId) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/empleados/${empleadoId}/invitacion`,
+      `${API_URL}/empleados/${empleadoId}/invitacion`,
       {
         method: 'POST',
         headers: {
@@ -975,7 +974,7 @@ const enviarInvitacion = async (empleadoId) => {
 const validarInvitacion = async () => {
   try {
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/invitaciones/${tokenInvitacion}/validar`
+      `${API_URL}/invitaciones/${tokenInvitacion}/validar`
     )
 
     const datos = await respuesta.json()
@@ -1038,7 +1037,7 @@ const crearPasswordEmpleado = async () => {
 
   try {
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/invitaciones/${tokenInvitacion}/crear-password`,
+      `${API_URL}/invitaciones/${tokenInvitacion}/crear-password`,
       {
         method: 'POST',
         headers: {
@@ -1096,7 +1095,7 @@ if (passwordRestablecida !== confirmarPasswordRestablecida) {
 
   try {
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/usuarios/restablecer-password/${tokenRecuperacion}`,
+      `${API_URL}/usuarios/restablecer-password/${tokenRecuperacion}`,
       {
         method: 'POST',
         headers: {
@@ -1140,7 +1139,7 @@ const registrarRH = async () => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      'http://127.0.0.1:8001/usuarios/rh/crear',
+      `${API_URL}/usuarios/rh/crear`,
       {
         method: 'POST',
         headers: {
@@ -1184,7 +1183,7 @@ const editarArea = async (area) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/catalogos/areas/${area.id}`,
+      `${API_URL}/catalogos/areas/${area.id}`,
       {
         method: 'PATCH',
         headers: {
@@ -1218,7 +1217,7 @@ const cambiarEstadoArea = async (area) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/catalogos/areas/${area.id}/estado`,
+      `${API_URL}/catalogos/areas/${area.id}/estado`,
       {
         method: 'PATCH',
         headers: {
@@ -1254,7 +1253,7 @@ const editarPuesto = async (puesto) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/catalogos/puestos/${puesto.id}`,
+      `${API_URL}/catalogos/puestos/${puesto.id}`,
       {
         method: 'PATCH',
         headers: {
@@ -1288,7 +1287,7 @@ const cambiarEstadoPuesto = async (puesto) => {
     const token = localStorage.getItem('access_token')
 
     const respuesta = await fetch(
-      `http://127.0.0.1:8001/catalogos/puestos/${puesto.id}/estado`,
+      `${API_URL}/catalogos/puestos/${puesto.id}/estado`,
       {
         method: 'PATCH',
         headers: {
@@ -2973,7 +2972,6 @@ if (rol === 'EMPLEADO') {
           onClick={() => {
             setMostrarRecuperacion(true)
             setMensajeRecuperacion('')
-            setEnlaceRecuperacion('')
             setCorreoRecuperacion(correo)
           }}
         >
@@ -3010,28 +3008,11 @@ if (rol === 'EMPLEADO') {
           <p>{mensajeRecuperacion}</p>
         )}
 
-        {enlaceRecuperacion && (
-          <div>
-            <p>
-              Enlace generado para pruebas:
-            </p>
-
-            <a
-              href={enlaceRecuperacion}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Abrir enlace de recuperación
-            </a>
-          </div>
-        )}
-
     <button
       type="button"
       onClick={() => {
         setMostrarRecuperacion(false)
         setMensajeRecuperacion('')
-        setEnlaceRecuperacion('')
       }}
     >
       Cancelar

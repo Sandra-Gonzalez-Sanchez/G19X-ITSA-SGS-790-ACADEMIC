@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pwdlib import PasswordHash
 import secrets
+import os
 from datetime import datetime, timedelta, timezone
 from database.database import get_db
 from models.usuario import Usuario
@@ -21,6 +22,8 @@ router = APIRouter(
 )
 
 password_hash = PasswordHash.recommended()
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 @router.post("/rh")
 def crear_usuario_rh(
@@ -163,11 +166,15 @@ def solicitar_recuperacion(
         Usuario.correo == datos.correo
     ).first()
 
+    mensaje = (
+        "Si el correo está registrado, recibirás un enlace "
+        "para restablecer tu contraseña."
+    )
+
     if not usuario:
-        raise HTTPException(
-            status_code=404,
-            detail="No existe una cuenta registrada con este correo"
-        )
+        return {
+            "mensaje": mensaje
+        }
 
     token = secrets.token_urlsafe(32)
 
@@ -177,7 +184,7 @@ def solicitar_recuperacion(
     )
 
     enlace = (
-        f"http://localhost:5173/restablecer-password/{token}"
+        f"{FRONTEND_URL}/restablecer-password/{token}"
     )
 
     try:
@@ -188,23 +195,16 @@ def solicitar_recuperacion(
 
         db.commit()
 
-    except Exception as error:
+    except Exception:
         db.rollback()
-
-        print("ERROR AL ENVIAR CORREO DE RECUPERACIÓN:")
-        print(error)
 
         raise HTTPException(
             status_code=500,
             detail="No fue posible enviar el correo de recuperación"
         )
 
-    print("ENLACE DE RECUPERACIÓN:")
-    print(enlace)
-
     return {
-        "mensaje": "Se generó el enlace de recuperación correctamente",
-        "enlace": enlace
+        "mensaje": mensaje
     }
 
 @router.post("/restablecer-password/{token}")

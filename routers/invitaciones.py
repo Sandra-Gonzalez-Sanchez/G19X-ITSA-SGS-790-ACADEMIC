@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import secrets
+import os
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -12,6 +13,8 @@ from services.seguridad import validar_password, verificar_rh
 from services.correo import enviar_correo_invitacion
 from schemas.invitacion import CrearPassword
 from models.usuario import Usuario
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
 
@@ -64,7 +67,7 @@ def generar_invitacion(
     db.refresh(nueva_invitacion)
 
     enlace_invitacion = (
-        f"http://localhost:5173/invitacion/{nueva_invitacion.token}"
+        f"{FRONTEND_URL}/invitacion/{nueva_invitacion.token}"
     )
 
     enviar_correo_invitacion(

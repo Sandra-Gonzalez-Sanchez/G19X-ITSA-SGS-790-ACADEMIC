@@ -8,11 +8,14 @@ def ejecutar_ocr(ruta_documento):
         os.path.dirname(os.path.abspath(__file__))
     )
 
-    python_ocr = os.path.join(
-        ruta_proyecto,
-        ".venv_ocr",
-        "Scripts",
-        "python.exe"
+    python_ocr = os.getenv(
+        "OCR_PYTHON",
+        os.path.join(
+            ruta_proyecto,
+            ".venv_ocr",
+            "Scripts",
+            "python.exe"
+        )
     )
 
     script_ocr = os.path.join(
