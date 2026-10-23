@@ -2669,60 +2669,50 @@ if (rol === 'EMPLEADO') {
       </div>
     </div>
 
-    <div className="employee-profile-card">
-  <h2>Documentación requerida</h2>
-  <p>
-    Los documentos deberán cargarse en formato PDF.
-  </p>
+<div className="documents-list">
+  {documentosRequeridos.map((documentoRequerido) => {
+    const documentoGuardado = documentos.find(
+      (documento) =>
+        documento.tipo_documento === documentoRequerido.tipo
+    )
 
-  <div className="documents-list">
-    {documentosRequeridos.map((documentoRequerido) => {
-  const documentoGuardado = documentos.find(
-    (documento) =>
-      documento.tipo_documento === documentoRequerido.tipo
-  )
+    const estaSeleccionado =
+      tipoDocumentoSeleccionado === documentoRequerido.tipo &&
+      archivoSeleccionado
 
-  const estaSeleccionado =
-    tipoDocumentoSeleccionado === documentoRequerido.tipo &&
-    archivoSeleccionado
+    return (
+      <div
+        className="document-row"
+        key={documentoRequerido.tipo}
+      >
+        <div>
+          <strong>{documentoRequerido.nombre}</strong>
+          <p>{documentoRequerido.descripcion}</p>
 
-  return (
-    <div
-      className="document-row"
-      key={documentoRequerido.tipo}
-    >
-      <div>
-        <strong>{documentoRequerido.nombre}</strong>
-        <p>{documentoRequerido.descripcion}</p>
+          {documentoGuardado?.motivo_revision && (
+          <div className="document-review-message">
+            <strong>Motivo:</strong>
+            <p>{documentoGuardado.motivo_revision}</p>
+          </div>
+        )}
+        </div>
 
-      {documentoGuardado?.motivo_revision && (
-  <div className="document-review-message">
-    <strong>Motivo:</strong>
-
-    <p>
-      {documentoGuardado.motivo_revision}
-    </p>
-  </div>
-)}
-
-      </div>
-
-         {!documentoGuardado?.motivo_revision && (
-  <span className="status status-pending">
-    {documentoGuardado?.estado || 'PENDIENTE'}
-  </span>
-)}
+               {!documentoGuardado?.motivo_revision && (
+          <span className="status status-pending">
+            {documentoGuardado?.estado || 'PENDIENTE'}
+          </span>
+        )}
 
         {documentoGuardado &&
           documentoGuardado.estado !== 'NO APLICA' && (
             <button
-               type="button"
+              type="button"
               className="secondary-button"
               onClick={() => verDocumento(documentoGuardado.id)}
             >
               Ver documento
             </button>
-        )}
+          )}
 
         {documentoGuardado &&
           documentoGuardado.estado !== 'NO APLICA' && (
@@ -2733,81 +2723,79 @@ if (rol === 'EMPLEADO') {
             >
               Quitar documento
             </button>
-        )}
+          )}
 
+        {documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
+          !documentoGuardado && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={marcarSeguridadSocialNoAplica}
+            >
+              No cuento con este documento
+            </button>
+          )}
 
-    {documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
-  !documentoGuardado && (
-    <button
-      className="secondary-button"
-      onClick={marcarSeguridadSocialNoAplica}
-    >
-      No cuento con este documento
-    </button>
-  )}
+        {documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
+          documentoGuardado?.estado === 'NO APLICA' && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={quitarSeguridadSocialNoAplica}
+            >
+              Sí cuento con este documento
+            </button>
+          )}
 
-{documentoRequerido.tipo === 'SEGURIDAD_SOCIAL' &&
-  documentoGuardado?.estado === 'NO APLICA' && (
-    <button
-      className="secondary-button"
-      onClick={quitarSeguridadSocialNoAplica}
-    >
-      Sí cuento con este documento
-    </button>
-  )}
+        {documentoGuardado?.estado !== 'NO APLICA' &&
+          (estaSeleccionado ? (
+            <>
+              <span className="file-name">
+                {archivoSeleccionado.name}
+              </span>
 
+              <button
+                type="button"
+                className="primary-button"
+                onClick={subirDocumento}
+              >
+                Subir documento
+              </button>
 
-        {documentoGuardado?.estado !== 'NO APLICA' && (
-  estaSeleccionado ? (
-    <>
-      <span className="file-name">
-        {archivoSeleccionado.name}
-      </span>
-
-      <button
-        className="primary-button"
-        onClick={subirDocumento}
-      >
-        Subir documento
-      </button>
-
-      <button
-        type="button"
-        className="secondary-button"
-        onClick={() => {
-          setArchivoSeleccionado(null)
-          setTipoDocumentoSeleccionado('')
-          setMensajeDocumento('')
-        }}
-      >
-        Cancelar
-      </button>
-    </>
-  ) : (
-
-    <label className="upload-button">
-      Seleccionar PDF
-      <input
-        type="file"
-        accept=".pdf,application/pdf"
-        hidden
-        onChange={(e) => {
-          setTipoDocumentoSeleccionado(
-            documentoRequerido.tipo
-          )
-          setArchivoSeleccionado(e.target.files[0])
-          setMensajeDocumento('')
-        }}
-      />
-    </label>
-  )
-)}
-
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  setArchivoSeleccionado(null)
+                  setTipoDocumentoSeleccionado('')
+                  setMensajeDocumento('')
+                }}
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <label className="upload-button">
+              Seleccionar PDF
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                hidden
+                onChange={(e) => {
+                  setTipoDocumentoSeleccionado(
+                    documentoRequerido.tipo
+                  )
+                  setArchivoSeleccionado(e.target.files[0])
+                  setMensajeDocumento('')
+                }}
+              />
+            </label>
+          ))}
       </div>
-  )
-})}
-    </div>
-  </div>
+    )
+  })}
+</div>
+
 </div>
 )}
 
@@ -2873,7 +2861,7 @@ if (rol === 'EMPLEADO') {
   )}
 
 
-  {estado === 'EN REVISION' && (
+  {estado === 'SOLICITA CORRECCION' && (
   <>
     <p>El documento requiere corrección.</p>
 

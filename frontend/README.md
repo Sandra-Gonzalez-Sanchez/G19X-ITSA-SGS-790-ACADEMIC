@@ -43,3 +43,13 @@ El frontend permite:
 - Consulta del estado de los documentos.
 - Visualización de documentos.
 - Consulta de resultados de validación documental.
+
+## Configuración
+
+El frontend utiliza la variable de entorno `VITE_API_URL` para establecer la dirección del backend.
+
+Crear un archivo `.env` dentro de la carpeta `frontend/` con:
+
+```text
+VITE_API_URL=http://127.0.0.1:8001
+```
