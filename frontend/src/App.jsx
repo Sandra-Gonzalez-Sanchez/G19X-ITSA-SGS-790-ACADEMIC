@@ -2754,25 +2754,28 @@ if (rol === 'EMPLEADO') {
                 {archivoSeleccionado.name}
               </span>
 
-              <button
-                type="button"
-                className="primary-button"
-                onClick={subirDocumento}
-              >
-                Subir documento
-              </button>
 
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => {
-                  setArchivoSeleccionado(null)
-                  setTipoDocumentoSeleccionado('')
-                  setMensajeDocumento('')
-                }}
-              >
-                Cancelar
-              </button>
+              <div className="document-actions">
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={subirDocumento}
+                  >
+                    Subir documento
+                  </button>
+
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => {
+                      setArchivoSeleccionado(null)
+                      setTipoDocumentoSeleccionado('')
+                      setMensajeDocumento('')
+                    }}
+                  >
+                    Cancelar
+                  </button>
+              </div>
             </>
           ) : (
             <label className="upload-button">

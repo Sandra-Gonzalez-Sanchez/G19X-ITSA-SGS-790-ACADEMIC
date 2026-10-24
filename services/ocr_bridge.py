@@ -1,7 +1,9 @@
 import os
 import subprocess
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 
 def ejecutar_ocr(ruta_documento):
     ruta_proyecto = os.path.dirname(
@@ -33,7 +35,8 @@ def ejecutar_ocr(ruta_documento):
         capture_output=True,
         text=True,
         encoding="utf-8",
-        errors="replace"
+        errors="replace",
+        timeout=120
     )
 
     for linea in resultado.stdout.splitlines():
@@ -41,14 +44,9 @@ def ejecutar_ocr(ruta_documento):
             json_texto = linea.replace("RESULTADO_OCR:", "", 1)
             return json.loads(json_texto)
 
-    print("STDOUT DEL OCR:")
-    print(resultado.stdout)
-
-    print("STDERR DEL OCR:")
-    print(resultado.stderr)
-
-    print("CÓDIGO DE SALIDA DEL OCR:")
-    print(resultado.returncode)
+    logger.info("STDOUT DEL OCR:\n%s", resultado.stdout)
+    logger.error("STDERR DEL OCR:\n%s", resultado.stderr)
+    logger.error("CÓDIGO DE SALIDA DEL OCR: %s", resultado.returncode)
 
     raise RuntimeError(
         "No se encontró el resultado del OCR."

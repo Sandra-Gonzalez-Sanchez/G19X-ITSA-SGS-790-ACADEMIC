@@ -1,6 +1,11 @@
 import os
 import re
-import unicodedata
+from services.comparacion_service import (
+    comparar_nombres,
+    comparar_fechas,
+    comparar_curp,
+    comparar_rfc,
+)
 
 os.environ["FLAGS_enable_pir_api"] = "0"
 
@@ -611,60 +616,6 @@ def procesar_documento(ruta_documento):
 
     return datos
 
-def normalizar_nombre(nombre):
-    if not nombre:
-        return None
-
-    nombre = nombre.strip().upper()
-
-    nombre = unicodedata.normalize("NFD", nombre)
-    nombre = "".join(
-        caracter for caracter in nombre
-        if unicodedata.category(caracter) != "Mn"
-    )
-
-    nombre = " ".join(nombre.split())
-
-    return nombre
-
-def comparar_nombres(nombre_1, nombre_2):
-    if not nombre_1 or not nombre_2:
-        return "NO SE PUEDE COMPARAR"
-
-    nombre_1_normalizado = normalizar_nombre(nombre_1)
-    nombre_2_normalizado = normalizar_nombre(nombre_2)
-
-    if nombre_1_normalizado == nombre_2_normalizado:
-        return "COINCIDE"
-
-    return "NO COINCIDE"
-
-def comparar_fechas(fecha_1, fecha_2):
-    if not fecha_1 or not fecha_2:
-        return "NO SE PUEDE COMPARAR"
-
-    if fecha_1 == fecha_2:
-        return "COINCIDE"
-
-    return "NO COINCIDE"
-
-def comparar_curp(curp_1, curp_2):
-    if not curp_1 or not curp_2:
-        return "NO SE PUEDE COMPARAR"
-
-    if curp_1.strip().upper() == curp_2.strip().upper():
-        return "COINCIDE"
-
-    return "NO COINCIDE"
-
-def comparar_rfc(rfc_1, rfc_2):
-    if not rfc_1 or not rfc_2:
-        return "NO SE PUEDE COMPARAR"
-
-    if rfc_1.strip().upper() == rfc_2.strip().upper():
-        return "COINCIDE"
-
-    return "NO COINCIDE"
 
 def comparar_documentos(datos_documento_1, datos_documento_2):
     resultado = {

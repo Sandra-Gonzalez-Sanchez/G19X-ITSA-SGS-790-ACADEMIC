@@ -126,6 +126,11 @@ Para crear la base de datos:
 CREATE DATABASE ingreso_personal;
 ```
 
+## Integración con IA
+
+Utiliza Ollama y el modelo Qwen3:4b-instruct para realizar la validación  de los documentos cargados, analizar la información obtenida mediante OCR e identificar posibles inconsistencias en los datos documentales.
+
+
 ## Instalación
 
 ### 1. Configurar el entorno de Python

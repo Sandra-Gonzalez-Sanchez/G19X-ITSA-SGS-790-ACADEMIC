@@ -1,10 +1,11 @@
 import os
+import logging
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -50,7 +51,6 @@ def get_db():
 if __name__ == "__main__":
     try:
         with engine.connect():
-            print("Conexion exitosa con PostgreSQL")
+            logger.info("Conexion exitosa con PostgreSQL")
     except Exception as error:
-        print("Error al conectar con PostgreSQL:")
-        print(error)
+        logger.error("Error al conectar con PostgreSQL: %s", error)

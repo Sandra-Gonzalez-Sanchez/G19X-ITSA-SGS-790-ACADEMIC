@@ -1,9 +1,18 @@
+import os
 import json
 import urllib.request
 import urllib.error
+import logging
+from dotenv import load_dotenv
 
+load_dotenv()
 
-OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
+logger = logging.getLogger(__name__)
+
+OLLAMA_URL = os.getenv(
+    "OLLAMA_URL",
+    "http://127.0.0.1:11434/api/chat"
+)
 MODELO_IA = "qwen3:4b-instruct"
 
 
@@ -281,8 +290,7 @@ Si detectas una inconsistencia:
         KeyError
     ) as error:
 
-        print("ERROR EN VALIDACIÓN DOCUMENTAL CON IA:")
-        print(error)
+        logger.error("ERROR EN VALIDACIÓN DOCUMENTAL CON IA: %s", error)
 
         return {
             "disponible": False,
