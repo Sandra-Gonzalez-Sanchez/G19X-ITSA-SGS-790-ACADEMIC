@@ -3,7 +3,6 @@ import shutil
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-import re
 import uuid
 
 
@@ -17,23 +16,9 @@ from services.seguridad import (
     verificar_rh,
     verificar_acceso_documento
 )
-from services.ocr_bridge import ejecutar_ocr
 from services.validacion_service import (
-    comparar_nombres,
-    comparar_fechas,
-    comparar_curp,
-    comparar_rfc,
-    validar_tipo_documento,
-    validar_datos_esenciales,
-    validar_documentos_cruzados,
-    guardar_validacion,
-    obtener_nombre_documento,
-    construir_mensaje_revision,
-    preparar_datos_para_ia,
-    procesar_inconsistencias_ia,
     procesar_documento
 )
-from services.ia_validacion import validar_documento_con_ia
 
 
 
@@ -235,74 +220,6 @@ def eliminar_documento(
         "tipo_documento": tipo_documento
     }
 
-
-@router.put("/{documento_id}/aprobar")
-def aprobar_documento(
-    documento_id: int,
-    db: Session = Depends(get_db),
-    datos_rh: dict = Depends(verificar_rh)
-):
-    documento = db.query(Documento).filter(
-        Documento.id == documento_id
-    ).first()
-
-    if not documento:
-        raise HTTPException(
-            status_code=404,
-            detail="Documento no encontrado"
-        )
-
-    if documento.estado != "EN REVISION":
-        raise HTTPException(
-            status_code=400,
-            detail="Solo se pueden aprobar documentos que estén EN REVISION"
-        )
-
-    documento.estado = "VALIDADO"
-
-    db.commit()
-    db.refresh(documento)
-
-    return {
-        "mensaje": "Documento aprobado correctamente",
-        "documento_id": documento.id,
-        "tipo_documento": documento.tipo_documento,
-        "estado": documento.estado
-    }
-
-@router.put("/{documento_id}/solicitar-correccion")
-def solicitar_correccion_documento(
-    documento_id: int,
-    db: Session = Depends(get_db),
-    datos_rh: dict = Depends(verificar_rh)
-):
-    documento = db.query(Documento).filter(
-        Documento.id == documento_id
-    ).first()
-
-    if not documento:
-        raise HTTPException(
-            status_code=404,
-            detail="Documento no encontrado"
-        )
-
-    if documento.estado != "EN REVISION":
-        raise HTTPException(
-            status_code=400,
-            detail="Solo se puede solicitar corrección de documentos que estén EN REVISION"
-        )
-
-    documento.estado = "PENDIENTE"
-
-    db.commit()
-    db.refresh(documento)
-
-    return {
-        "mensaje": "Corrección solicitada correctamente",
-        "documento_id": documento.id,
-        "tipo_documento": documento.tipo_documento,
-        "estado": documento.estado
-    }
 
 @router.put("/{documento_id}/no-aplica")
 def marcar_documento_no_aplica(

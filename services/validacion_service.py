@@ -1,5 +1,6 @@
 import unicodedata
 import re
+import logging
 from datetime import datetime
 from models.dato_extraido import DatoExtraido
 from models.validacion import Validacion
@@ -13,6 +14,8 @@ from services.comparacion_service import (
     comparar_curp,
     comparar_rfc,
 )
+
+logger = logging.getLogger(__name__)
 
 def detectar_documento_no_compatible(tipo_documento, textos_detectados):
     if not textos_detectados:
@@ -75,7 +78,7 @@ def detectar_documento_no_compatible(tipo_documento, textos_detectados):
 
 def validar_tipo_documento(tipo_documento, textos_detectados):
     if not textos_detectados:
-        return "REQUIERE REVISIÓN"
+        return "NO COMPATIBLE"
 
     if detectar_documento_no_compatible(
         tipo_documento,
@@ -110,7 +113,6 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
             "palabras_clave": [
                 "INSTITUTO NACIONAL ELECTORAL",
                 "CREDENCIAL PARA VOTAR",
-                "PASAPORTE"
             ],
             "minimo_coincidencias": 1
         },
@@ -188,7 +190,7 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
     if coincidencias >= regla["minimo_coincidencias"]:
         return "DOCUMENTO VÁLIDO"
 
-    return "REQUIERE REVISIÓN"
+    return "NO COMPATIBLE"
 
 def validar_datos_esenciales(tipo_documento, datos):
     if not datos:
@@ -203,18 +205,10 @@ def validar_datos_esenciales(tipo_documento, datos):
     if tipo_documento == "CURP":
         return bool(
             datos.nombre and
-            datos.fecha_nacimiento and
             datos.curp and
-            (
-                re.fullmatch(
-                    r"[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d",
-                    datos.curp.upper()
-                )
-                or
-                re.fullmatch(
-                    r"US-TEST-[A-Z]+-\d{8}",
-                    datos.curp.upper()
-                )
+            re.fullmatch(
+                r"[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d",
+                datos.curp.upper()
             ) and
             datos.estado_formato_curp not in (
                 "REQUIERE REVISIÓN",
@@ -230,7 +224,6 @@ def validar_datos_esenciales(tipo_documento, datos):
 
     if tipo_documento == "RFC":
         identificador_fiscal_valido = (
-            (
                 datos.rfc and
                 len(datos.rfc) in (12, 13) and
                 datos.estado_formato_rfc not in (
@@ -238,19 +231,8 @@ def validar_datos_esenciales(tipo_documento, datos):
                     "NO DETECTADO"
                 )
             )
-            or
-            (
-                datos.nss and
-                re.fullmatch(
-                    r"\d{3}-\d{2}-\d{4}",
-                    datos.nss
-                )
-            )
-        )
 
         return bool(
-            datos.nombre and
-            datos.fecha_nacimiento and
             identificador_fiscal_valido
         )
 
@@ -270,22 +252,8 @@ def validar_datos_esenciales(tipo_documento, datos):
         return bool(
             datos.nombre and
             datos.nss and
-            (
-                (
-                    datos.nss.isdigit() and
-                    len(datos.nss) == 11
-                )
-                or
-                re.fullmatch(
-                    r"SS-[A-Z]{2}-\d{4}-\d{4}",
-                    datos.nss.upper()
-                )
-                or
-                re.fullmatch(
-                    r"\d{3}-\d{2}-\d{4}",
-                    datos.nss
-                )
-            )
+            datos.nss.isdigit() and
+            len(datos.nss) == 11
         )
 
     return False
@@ -768,14 +736,22 @@ def procesar_documento(
     nombre_archivo,
     ruta_archivo,
 ):
+
+    logger.warning(">>> ENTRE A procesar_documento <<<")
+
+
     datos_ocr = ejecutar_ocr(ruta_archivo)
     resultado_tipo_documento = validar_tipo_documento(
         tipo_documento,
         datos_ocr.get("textos_detectados", [])
     )
 
-    print("VALIDACIÓN DEL TIPO DE DOCUMENTO:")
-    print(tipo_documento, "->", resultado_tipo_documento)
+    print("===== DATOS OCR =====")
+    print(datos_ocr)
+    print("=====================")
+
+    logger.info("VALIDACIÓN DEL TIPO DE DOCUMENTO:")
+    logger.info("%s -> %s", tipo_documento, resultado_tipo_documento)
 
     if resultado_tipo_documento == "NO COMPATIBLE":
         documento.estado = "PENDIENTE"
@@ -893,6 +869,13 @@ def procesar_documento(
         if parte
     )
 
+    logger.info(
+        "EMPLEADO EN PROCESAMIENTO: id=%s, nombre=%s, correo=%s",
+        empleado.id,
+        nombre_empleado,
+        empleado.correo
+    )
+
     if datos_documento and datos_documento.nombre:
         resultado_nombre_empleado = comparar_nombres(
             nombre_empleado,
@@ -915,7 +898,22 @@ def procesar_documento(
         datos_documento
     )
 
-    requiere_revision = False
+    requiere_correccion = False
+
+    if not datos_esenciales_correctos:
+        requiere_correccion = True
+
+        guardar_validacion(
+            db=db,
+            empleado_id=empleado.id,
+            campo="DATOS_ESENCIALES",
+            documento_origen=tipo_documento,
+            documento_comparado=tipo_documento,
+            valor_origen=nombre_archivo,
+            valor_comparado="Datos obligatorios",
+            resultado="NO COINCIDE",
+            motivo="No se pudieron leer los datos obligatorios del documento."
+        )
 
     db.query(Validacion).filter(
         Validacion.empleado_id == empleado.id,
@@ -935,6 +933,8 @@ def procesar_documento(
         validaciones_documento=validaciones_documento
     )
 
+    logger.info("NOMBRE ENVIADO A IA: %s", nombre_empleado)
+
     resultado_ia = validar_documento_con_ia(
         tipo_documento=tipo_documento,
         datos_extraidos=datos_para_ia,
@@ -942,8 +942,26 @@ def procesar_documento(
         validaciones=validaciones_para_ia
     )
 
-    print("VALIDACIÓN DOCUMENTAL MEDIANTE IA:")
-    print(resultado_ia)
+    logger.info("VALIDACIÓN DOCUMENTAL MEDIANTE IA:")
+    logger.info("%s", resultado_ia)
+
+    logger.info("===== VALIDACIONES RELACIONADAS CON EL DOCUMENTO =====")
+
+    for validacion in validaciones_documento:
+        if (
+                validacion.documento_origen == tipo_documento
+                or validacion.documento_comparado == tipo_documento
+        ):
+            logger.info(
+                "CAMPO: %s | ORIGEN: %s | COMPARADO: %s | RESULTADO: %s | VALOR ORIGEN: %s | VALOR COMPARADO: %s",
+                validacion.campo,
+                validacion.documento_origen,
+                validacion.documento_comparado,
+                validacion.resultado,
+                validacion.valor_origen,
+                validacion.valor_comparado
+            )
+
 
     procesar_inconsistencias_ia(
         db=db,
@@ -953,9 +971,9 @@ def procesar_documento(
     )
 
     if resultado_ia["requiere_revision"]:
-        requiere_revision = True
+        requiere_correccion = True
 
-    if requiere_revision:
+    if requiere_correccion:
         documento.estado = "SOLICITA CORRECCION"
     else:
         documento.estado = "VALIDADO"
@@ -976,7 +994,7 @@ def procesar_documento(
         "mensaje": (
             "Documento validado correctamente."
             if documento.estado == "VALIDADO"
-            else "El documento requiere revisión."
+            else "El documento requiere  corrección."
         ),
         "empleado_id": empleado.id,
         "tipo_documento": tipo_documento,

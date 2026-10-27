@@ -11,7 +11,7 @@ ruta_proyecto = os.path.dirname(
 
 sys.path.append(ruta_proyecto)
 
-from services.ocr_service import procesar_documento
+from services.ocr_service import procesar_documento_ocr
 
 
 if len(sys.argv) < 2:
@@ -22,7 +22,7 @@ if len(sys.argv) < 2:
 
 ruta_documento = sys.argv[1]
 
-datos = procesar_documento(ruta_documento)
+datos = procesar_documento_ocr(ruta_documento)
 
 print(
     "RESULTADO_OCR:" + json.dumps(

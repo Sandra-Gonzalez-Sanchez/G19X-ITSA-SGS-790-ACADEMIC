@@ -153,46 +153,38 @@ def extraer_rfc(textos):
     return None
 
 def extraer_clabe(textos):
-    patrones = [
-        r"\b\d{18}\b",
-        r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b",
-        r"\b\d{4,17}\b"
-    ]
-
-    etiquetas = [
-        "CLABE",
-        "CUENTA BANCARIA",
-        "NÚMERO DE CUENTA",
-        "NUMERO DE CUENTA",
-        "ACCOUNT NUMBER",
-        "BANK ACCOUNT",
-        "BANK ACCOUNT NUMBER",
-        "ACCOUNT NO",
-        "ACCOUNT #",
-        "IBAN"
-    ]
+    patron_clabe = r"(?<!\d)(?:\d\s*){18}(?!\d)"
 
     for i, texto in enumerate(textos):
         texto_mayusculas = texto.strip().upper()
 
-        if any(etiqueta in texto_mayusculas for etiqueta in etiquetas):
-            for patron in patrones:
-                coincidencia = re.search(patron, texto_mayusculas)
+        if "CLABE" in texto_mayusculas:
+            coincidencia = re.search(
+                patron_clabe,
+                texto_mayusculas
+            )
 
-                if coincidencia:
-                    return coincidencia.group()
+            if coincidencia:
+                return re.sub(
+                    r"\s+",
+                    "",
+                    coincidencia.group()
+                )
 
             for siguiente_texto in textos[i + 1:i + 3]:
                 siguiente_mayusculas = siguiente_texto.strip().upper()
 
-                for patron in patrones:
-                    coincidencia = re.search(
-                        patron,
-                        siguiente_mayusculas
-                    )
+                coincidencia = re.search(
+                    patron_clabe,
+                    siguiente_mayusculas
+                )
 
-                    if coincidencia:
-                        return coincidencia.group()
+                if coincidencia:
+                    return re.sub(
+                        r"\s+",
+                        "",
+                        coincidencia.group()
+                    )
 
     return None
 
@@ -321,7 +313,7 @@ def extraer_nombre(textos):
 
     texto_completo = " ".join(textos).upper()
 
-    # Detectar nombre en documentos de CFE
+
     if (
         "COMISIÓN FEDERAL DE ELECTRICIDAD" in texto_completo
         or "COMISION FEDERAL DE ELECTRICIDAD" in texto_completo
@@ -373,7 +365,6 @@ def extraer_nombre(textos):
                 ):
                     return candidato
 
-    # Detectar nombre en documentos con estructura NOMBRE / SEXO
     for i, texto in enumerate(textos):
         texto_limpio = texto.strip()
         texto_mayusculas = texto_limpio.upper().rstrip(":")
@@ -536,10 +527,7 @@ def extraer_fecha_nacimiento(textos):
     patrones_fecha = [
         r"\b\d{1,2}/\d{1,2}/\d{4}\b",
         r"\b\d{1,2}-\d{1,2}-\d{4}\b",
-        r"\b(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s+\d{1,2},\s+\d{4}\b",
-        r"\b(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{1,2},\s+\d{4}\b",
-        r"\b\d{1,2}\s+(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s+\d{4}\b",
-        r"\b\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{4}\b"
+        r"\b\d{1,2}\.\d{1,2}\.\d{4}\b"
     ]
 
     etiquetas_fecha = [
@@ -552,18 +540,31 @@ def extraer_fecha_nacimiento(textos):
     for i, texto in enumerate(textos):
         texto_mayusculas = texto.upper()
 
-        if any(etiqueta in texto_mayusculas for etiqueta in etiquetas_fecha):
-            for patron in patrones_fecha:
-                coincidencia = re.search(patron, texto_mayusculas)
-
-                if coincidencia:
-                    return coincidencia.group()
-
+        if any(
+            etiqueta in texto_mayusculas
+            for etiqueta in etiquetas_fecha
+        ):
+            # Buscar primero en los textos cercanos posteriores.
             for siguiente_texto in textos[i + 1:i + 6]:
                 siguiente_mayusculas = siguiente_texto.upper()
 
                 for patron in patrones_fecha:
-                    coincidencia = re.search(patron, siguiente_mayusculas)
+                    coincidencia = re.search(
+                        patron,
+                        siguiente_mayusculas
+                    )
+
+                    if coincidencia:
+                        return coincidencia.group()
+
+            for texto_anterior in textos[max(0, i - 6):i]:
+                anterior_mayusculas = texto_anterior.upper()
+
+                for patron in patrones_fecha:
+                    coincidencia = re.search(
+                        patron,
+                        anterior_mayusculas
+                    )
 
                     if coincidencia:
                         return coincidencia.group()
@@ -608,7 +609,7 @@ def extraer_datos(textos):
 
     return datos
 
-def procesar_documento(ruta_documento):
+def procesar_documento_ocr(ruta_documento):
     textos = leer_documento(ruta_documento)
     datos = extraer_datos(textos)
 

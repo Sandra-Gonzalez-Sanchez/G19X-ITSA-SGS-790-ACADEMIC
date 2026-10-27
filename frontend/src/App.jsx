@@ -323,7 +323,7 @@ const subirDocumento = async () => {
     return
   }
 
-  if (datos.estado === 'EN REVISION') {
+  if (datos.estado === 'SOLICITA CORRECCION') {
   setMensajeDocumento(
     datos.motivo_revision ||
     'El documento requiere corrección.'
@@ -2332,7 +2332,7 @@ if (rol === 'RH') {
     )?.nombre || documento.tipo_documento}
   </strong>
 
-  {documento.estado === 'EN REVISION' &&
+  {documento.estado === 'SOLICITA CORRECCION' &&
   documento.motivo_revision && (
     <div>
       <p>
@@ -2896,9 +2896,7 @@ if (rol === 'EMPLEADO') {
 
               <div className="document-actions">
                 <span className="status status-pending">
-                  {estado === 'EN REVISION'
-                    ? 'CORRECCIÓN REQUERIDA'
-                    : estado}
+                  {estado}
                 </span>
               </div>
             </div>

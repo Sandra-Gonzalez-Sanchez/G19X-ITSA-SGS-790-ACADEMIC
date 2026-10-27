@@ -26,18 +26,29 @@ def ejecutar_ocr(ruta_documento):
         "procesar_archivo.py"
     )
 
-    resultado = subprocess.run(
-        [
-            python_ocr,
-            script_ocr,
-            ruta_documento
-        ],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=120
-    )
+    try:
+        resultado = subprocess.run(
+            [
+                python_ocr,
+                script_ocr,
+                ruta_documento
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=300
+        )
+
+    except subprocess.TimeoutExpired:
+        logger.error(
+            "El proceso OCR excedió el tiempo máximo de espera."
+        )
+
+        raise RuntimeError(
+            "El procesamiento del documento tardó demasiado. "
+            "No fue posible completar el OCR."
+        )
 
     for linea in resultado.stdout.splitlines():
         if linea.startswith("RESULTADO_OCR:"):

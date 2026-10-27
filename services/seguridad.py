@@ -1,10 +1,12 @@
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
+import logging
 from datetime import datetime, timedelta, timezone
-
 import jwt
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 
 load_dotenv()
@@ -86,7 +88,7 @@ def verificar_acceso_documento(
     datos_token: dict = Depends(verificar_token)
 ):
     rol = datos_token.get("rol")
-    print("ROL QUE LLEGA AL DOCUMENTO:", rol)
+    logger.info("ROL QUE LLEGA AL DOCUMENTO: %s", rol)
 
     if rol not in ["EMPLEADO", "RH"]:
         raise HTTPException(

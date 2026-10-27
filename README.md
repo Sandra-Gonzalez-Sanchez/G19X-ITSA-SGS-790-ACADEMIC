@@ -126,9 +126,10 @@ Para crear la base de datos:
 CREATE DATABASE ingreso_personal;
 ```
 
-## Integración con IA
+## Uso de  IA
 
-Utiliza Ollama y el modelo Qwen3:4b-instruct para realizar la validación  de los documentos cargados, analizar la información obtenida mediante OCR e identificar posibles inconsistencias en los datos documentales.
+El sistema utiliza Ollama y el modelo Qwen3:4b-instruct para realizar la validación de los documentos cargados, analizar la información 
+obtenida mediante OCR e identificar posibles inconsistencias entre los datos documentales y la información registrada del empleado.
 
 
 ## Instalación
