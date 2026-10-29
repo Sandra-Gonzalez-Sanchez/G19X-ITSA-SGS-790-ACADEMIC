@@ -103,6 +103,15 @@ El sistema contempla los siguientes documentos:
 Los documentos emitidos en otros países o que no correspondan con los formatos
 contemplados por el sistema no deberán considerarse como documentos validados.
 
+## Estados del documento
+
+Los documentos pueden presentar los siguientes estados:
+
+1. **PENDIENTE:** el documento aún no se ha cargado o está pendiente de procesamiento o validación.
+2. **VALIDADO:** el documento ha sido procesado y validado correctamente.
+3. **SOLICITA CORRECCION:** se han encontrado inconsistencias en el documento, por lo que será necesario cargar nuevamente el documento.
+4. **NO APLICA:** se utilizará únicamente para el documento de Seguridad Social cuando el empleado no cuente con este documento.
+
 ## Configuración
 
 El proyecto utiliza variables de entorno para configurar la conexión

@@ -282,33 +282,134 @@ def obtener_expediente_empleado(
             DatoExtraido.documento_id == documento.id
         ).first()
 
-
         validaciones_documento = db.query(Validacion).filter(
             Validacion.empleado_id == empleado_id
         ).all()
 
         motivos_revision = []
+        tipos_mensaje = set()
 
         for validacion in validaciones_documento:
+
             participa_documento = (
-                validacion.documento_origen == documento.tipo_documento or
-                validacion.documento_comparado == documento.tipo_documento
+                    validacion.documento_origen == documento.tipo_documento or
+                    validacion.documento_comparado == documento.tipo_documento
             )
 
             if participa_documento and validacion.resultado in (
                     "NO COINCIDE",
                     "INCONSISTENTE"
             ):
-                motivos_revision.append({
-                    "campo": validacion.campo,
-                    "documento_origen": validacion.documento_origen,
-                    "documento_comparado": validacion.documento_comparado,
-                    "valor_origen": validacion.valor_origen,
-                    "valor_comparado": validacion.valor_comparado,
-                    "resultado": validacion.resultado,
-                    "motivo": validacion.motivo,
-                    "origen_validacion": validacion.origen_validacion
-                })
+
+                campo = validacion.campo
+
+                if campo == "FECHA_NACIMIENTO":
+
+                    if "FECHA_NACIMIENTO" not in tipos_mensaje:
+                        motivos_revision.append({
+                            "campo": "FECHA_NACIMIENTO",
+                            "motivo": (
+                                "La fecha de nacimiento del documento "
+                                "no coincide con la registrada "
+                                "en los documentos del expediente."
+                            ),
+                            "valor_documento": validacion.valor_origen,
+                            "valor_referencia": validacion.valor_comparado,
+                            "origen_validacion": validacion.origen_validacion
+                        })
+
+                        tipos_mensaje.add("FECHA_NACIMIENTO")
+
+                elif campo in ("NOMBRE", "NOMBRE_EMPLEADO"):
+
+                    if documento.tipo_documento == "COMPROBANTE_DOMICILIO":
+
+                        if "DOMICILIO" not in tipos_mensaje:
+                            motivos_revision.append({
+                                "campo": "DOMICILIO",
+                                "motivo": (
+                                    "Comprobante de domicilio identificado correctamente. "
+                                    "El nombre del titular del comprobante es diferente "
+                                    "al nombre del empleado."
+                                ),
+                                "valor_documento": validacion.valor_origen,
+                                "valor_referencia": validacion.valor_comparado,
+                                "origen_validacion": validacion.origen_validacion
+                            })
+
+                            tipos_mensaje.add("DOMICILIO")
+
+                    else:
+
+                        if "NOMBRE" not in tipos_mensaje:
+                            motivos_revision.append({
+                                "campo": "NOMBRE",
+                                "motivo": (
+                                    "El nombre del documento no coincide "
+                                    "con el nombre registrado para el empleado."
+                                ),
+                                "valor_documento": validacion.valor_origen,
+                                "valor_referencia": validacion.valor_comparado,
+                                "origen_validacion": validacion.origen_validacion
+                            })
+
+                            tipos_mensaje.add("NOMBRE")
+
+                elif campo == "CURP":
+
+                    if "CURP" not in tipos_mensaje:
+                        motivos_revision.append({
+                            "campo": "CURP",
+                            "motivo": (
+                                "La CURP del documento no coincide "
+                                "con la que se muestra en la INE."
+                            ),
+                            "valor_documento": validacion.valor_origen,
+                            "valor_referencia": validacion.valor_comparado,
+                            "origen_validacion": validacion.origen_validacion
+                        })
+
+                        tipos_mensaje.add("CURP")
+
+                elif validacion.motivo:
+
+                    if validacion.motivo not in [
+                        motivo["motivo"]
+                        for motivo in motivos_revision
+                    ]:
+                        motivos_revision.append({
+                            "campo": campo,
+                            "motivo": validacion.motivo,
+                            "valor_documento": validacion.valor_origen,
+                            "valor_referencia": validacion.valor_comparado,
+                            "origen_validacion": validacion.origen_validacion
+                        })
+
+        motivos_unicos = []
+        nombres_mostrados = False
+
+        for motivo in motivos_revision:
+            campo = motivo.get("campo", "")
+            texto = motivo.get("motivo", "")
+
+            if campo in ("NOMBRE", "NOMBRE_EMPLEADO") or \
+                    "NOMBRE_EMPLEADO" in texto or \
+                    "NOMBRE: NO COINCIDE" in texto:
+
+                if not nombres_mostrados:
+                    motivos_unicos.append({
+                        "campo": "NOMBRE",
+                        "motivo": (
+                            "El nombre del documento no coincide "
+                            "con el nombre registrado para el empleado."
+                        )
+                    })
+                    nombres_mostrados = True
+
+            else:
+                motivos_unicos.append(motivo)
+
+        motivos_revision = motivos_unicos
 
         documentos_expediente.append({
             "id": documento.id,

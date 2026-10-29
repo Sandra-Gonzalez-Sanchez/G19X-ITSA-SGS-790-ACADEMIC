@@ -31,7 +31,6 @@ def leer_documento(ruta_documento):
 
 def extraer_curp(textos):
     patron_curp = r"\b[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d\b"
-    patron_identificador_usa = r"\bUS-TEST-[A-Z]+-\d{8}\b"
 
     for texto in textos:
         texto_mayusculas = texto.upper()
@@ -43,14 +42,6 @@ def extraer_curp(textos):
 
         if coincidencia_curp:
             return coincidencia_curp.group()
-
-        coincidencia_usa = re.search(
-            patron_identificador_usa,
-            texto_mayusculas
-        )
-
-        if coincidencia_usa:
-            return coincidencia_usa.group()
 
     return None
 

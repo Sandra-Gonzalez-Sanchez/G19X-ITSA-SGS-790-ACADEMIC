@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001'
 function App() {
   const [correo, setCorreo] = useState('')
   const [password, setPassword] = useState('')
@@ -2333,13 +2333,16 @@ if (rol === 'RH') {
   </strong>
 
   {documento.estado === 'SOLICITA CORRECCION' &&
-  documento.motivo_revision && (
-    <div>
-      <p>
-        <strong>Motivo de revisión:</strong>
-      </p>
-
-      <p>{documento.motivo_revision}</p>
+  documento.motivos_revision?.length > 0 && (
+    <div className="document-review-message">
+      <strong>Motivo de revisión:</strong>
+      <ul>
+        {documento.motivos_revision.map((motivo, indice) => (
+          <li key={indice}>
+            {motivo.motivo || `${motivo.campo}: ${motivo.resultado}`}
+          </li>
+        ))}
+      </ul>
     </div>
 )}
 
@@ -2697,11 +2700,9 @@ if (rol === 'EMPLEADO') {
         )}
         </div>
 
-               {!documentoGuardado?.motivo_revision && (
-          <span className="status status-pending">
-            {documentoGuardado?.estado || 'PENDIENTE'}
-          </span>
-        )}
+           <span className="status status-pending">
+                {documentoGuardado?.estado || 'PENDIENTE'}
+           </span>
 
         {documentoGuardado &&
           documentoGuardado.estado !== 'NO APLICA' && (

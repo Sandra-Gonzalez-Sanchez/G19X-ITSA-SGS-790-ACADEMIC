@@ -73,17 +73,6 @@ def verificar_rh(
         )
     return datos_token
 
-def verificar_rh_o_primero(
-    datos_token: dict = Depends(verificar_token)
-):
-    if datos_token.get("rol") != "RH":
-        raise HTTPException(
-            status_code=403,
-            detail="No tienes permisos para realizar esta acción"
-        )
-
-    return datos_token
-
 def verificar_acceso_documento(
     datos_token: dict = Depends(verificar_token)
 ):

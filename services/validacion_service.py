@@ -102,9 +102,9 @@ def validar_tipo_documento(tipo_documento, textos_detectados):
 
         "CURP": {
             "palabras_clave": [
-                "CLAVE ÚNICA DE REGISTRO DE POBLACIÓN",
-                "CLAVE UNICA DE REGISTRO DE POBLACION",
-                "CURP"
+                "CONSTANCIA DE LA CLAVE ÚNICA",
+                "CONSTANCIA DE LA CLAVE UNICA",
+                "CURP CERTIFICADA"
             ],
             "minimo_coincidencias": 1
         },
@@ -511,8 +511,11 @@ def preparar_datos_para_ia(
     for validacion in validaciones_documento:
 
         participa_documento = (
-            validacion.documento_origen == tipo_documento or
-            validacion.documento_comparado == tipo_documento
+                validacion.documento_comparado == tipo_documento
+                or (
+                        validacion.origen_validacion == "IA"
+                        and validacion.documento_origen == tipo_documento
+                )
         )
 
         if not participa_documento:
@@ -612,8 +615,11 @@ def construir_mensaje_revision(
     for validacion in validaciones_documento:
 
         participa_documento = (
-            validacion.documento_origen == tipo_documento or
-            validacion.documento_comparado == tipo_documento
+                validacion.documento_comparado == tipo_documento
+                or (
+                        validacion.origen_validacion == "IA"
+                        and validacion.documento_origen == tipo_documento
+                )
         )
 
         if participa_documento and validacion.resultado == "NO COINCIDE":
@@ -739,25 +745,40 @@ def procesar_documento(
 
     logger.warning(">>> ENTRE A procesar_documento <<<")
 
+    try:
+        datos_ocr = ejecutar_ocr(ruta_archivo)
+    except (RuntimeError, FileNotFoundError) as error:
+        logger.exception("Falló el OCR del documento %s", documento.id)
 
-    datos_ocr = ejecutar_ocr(ruta_archivo)
+        documento.estado = "PENDIENTE"
+        db.commit()
+        db.refresh(documento)
+
+        return {
+            "mensaje": "No pudimos leer el documento. Intenta subirlo de nuevo.",
+            "empleado_id": empleado.id,
+            "tipo_documento": tipo_documento,
+            "estado": documento.estado,
+            "archivo": nombre_archivo,
+            "documento_aceptado": False
+        }
+
     resultado_tipo_documento = validar_tipo_documento(
         tipo_documento,
         datos_ocr.get("textos_detectados", [])
     )
 
-    print("===== DATOS OCR =====")
-    print(datos_ocr)
-    print("=====================")
-
     logger.info("VALIDACIÓN DEL TIPO DE DOCUMENTO:")
     logger.info("%s -> %s", tipo_documento, resultado_tipo_documento)
 
     if resultado_tipo_documento == "NO COMPATIBLE":
-        documento.estado = "PENDIENTE"
+        documento.estado = "SOLICITA CORRECCION"
+
+        nombre_esperado = obtener_nombre_documento(tipo_documento)
 
         mensaje_tipo_documento = (
-            "El documento no es compatible con los formatos admitidos."
+            f"El documento no corresponde al tipo de documento solicitado. "
+            f"Se esperaba {nombre_esperado}."
         )
 
         guardar_validacion(
@@ -942,6 +963,7 @@ def procesar_documento(
         validaciones=validaciones_para_ia
     )
 
+
     logger.info("VALIDACIÓN DOCUMENTAL MEDIANTE IA:")
     logger.info("%s", resultado_ia)
 
@@ -977,6 +999,7 @@ def procesar_documento(
         documento.estado = "SOLICITA CORRECCION"
     else:
         documento.estado = "VALIDADO"
+        documento.motivo_revision = None
 
     db.commit()
     db.refresh(documento)
