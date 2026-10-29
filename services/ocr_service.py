@@ -535,7 +535,6 @@ def extraer_fecha_nacimiento(textos):
             etiqueta in texto_mayusculas
             for etiqueta in etiquetas_fecha
         ):
-            # Buscar primero en los textos cercanos posteriores.
             for siguiente_texto in textos[i + 1:i + 6]:
                 siguiente_mayusculas = siguiente_texto.upper()
 

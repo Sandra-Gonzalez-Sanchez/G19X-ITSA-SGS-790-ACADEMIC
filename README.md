@@ -107,10 +107,12 @@ contemplados por el sistema no deberán considerarse como documentos validados.
 
 Los documentos pueden presentar los siguientes estados:
 
-1. **PENDIENTE:** el documento aún no se ha cargado o está pendiente de procesamiento o validación.
-2. **VALIDADO:** el documento ha sido procesado y validado correctamente.
-3. **SOLICITA CORRECCION:** se han encontrado inconsistencias en el documento, por lo que será necesario cargar nuevamente el documento.
-4. **NO APLICA:** se utilizará únicamente para el documento de Seguridad Social cuando el empleado no cuente con este documento.
+| Estado | Qué significa | Quién lo cambia |
+|---|---|---|
+| `PENDIENTE` | El documento aún no se ha cargado o está pendiente de procesamiento o validación. | El sistema |
+| `VALIDADO` | El documento ha sido procesado y validado correctamente. | El sistema |
+| `SOLICITA CORRECCION` | Se encontraron inconsistencias en el documento y es necesario cargar nuevamente el documento. | El sistema |
+| `NO APLICA` | Se utiliza únicamente para el documento de Seguridad Social cuando el empleado no cuenta con este documento. | El empleado|
 
 ## Configuración
 
@@ -135,10 +137,19 @@ Para crear la base de datos:
 CREATE DATABASE ingreso_personal;
 ```
 
-## Uso de  IA
+## Uso de IA
 
-El sistema utiliza Ollama y el modelo Qwen3:4b-instruct para realizar la validación de los documentos cargados, analizar la información 
-obtenida mediante OCR e identificar posibles inconsistencias entre los datos documentales y la información registrada del empleado.
+### IA utilizada en el sistema
+
+El sistema utiliza Ollama con el modelo Qwen3:4b-instruct para realizar la validación de los documentos cargados, analizar la información obtenida
+mediante OCR e identificar posibles inconsistencias entre los datos documentales y la información registrada del empleado.
+
+### IA utilizada durante el desarrollo
+
+Durante el desarrollo se utilizó ChatGPT como herramienta de apoyo para resolver dudas técnicas, revisar código, analizar errores y orientar
+algunos ajustes del sistema.
+
+Las sugerencias se revisaron y ajustaron de acuerdo con los requerimientos y las pruebas realizadas en el sistema.
 
 
 ## Instalación
@@ -301,6 +312,9 @@ Para utilizar la validación mediante Inteligencia Artificial, Ollama debe estar
 ```text
 qwen3:4b-instruct
 ```
+## Documentos del proyecto
 
+- [PRD](docs/PRD.md)
+- [MVP](docs/MVP.md)
 
 

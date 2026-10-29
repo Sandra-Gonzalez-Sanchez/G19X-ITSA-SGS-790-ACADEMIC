@@ -622,7 +622,7 @@ def construir_mensaje_revision(
                 )
         )
 
-        if participa_documento and validacion.resultado == "NO COINCIDE":
+        if participa_documento and validacion.resultado in ("NO COINCIDE", "INCONSISTENTE"):
 
             if validacion.campo in ("NOMBRE", "NOMBRE_EMPLEADO"):
 
@@ -891,10 +891,9 @@ def procesar_documento(
     )
 
     logger.info(
-        "EMPLEADO EN PROCESAMIENTO: id=%s, nombre=%s, correo=%s",
-        empleado.id,
-        nombre_empleado,
-        empleado.correo
+        "Procesando documento %s del empleado %s",
+        documento.id,
+        empleado.id
     )
 
     if datos_documento and datos_documento.nombre:
@@ -954,7 +953,7 @@ def procesar_documento(
         validaciones_documento=validaciones_documento
     )
 
-    logger.info("NOMBRE ENVIADO A IA: %s", nombre_empleado)
+    logger.debug("NOMBRE ENVIADO A IA: %s", nombre_empleado)
 
     resultado_ia = validar_documento_con_ia(
         tipo_documento=tipo_documento,
@@ -963,9 +962,8 @@ def procesar_documento(
         validaciones=validaciones_para_ia
     )
 
-
-    logger.info("VALIDACIÓN DOCUMENTAL MEDIANTE IA:")
-    logger.info("%s", resultado_ia)
+    logger.debug("VALIDACIÓN DOCUMENTAL MEDIANTE IA:")
+    logger.debug("%s", resultado_ia)
 
     logger.info("===== VALIDACIONES RELACIONADAS CON EL DOCUMENTO =====")
 
@@ -974,15 +972,22 @@ def procesar_documento(
                 validacion.documento_origen == tipo_documento
                 or validacion.documento_comparado == tipo_documento
         ):
-            logger.info(
-                "CAMPO: %s | ORIGEN: %s | COMPARADO: %s | RESULTADO: %s | VALOR ORIGEN: %s | VALOR COMPARADO: %s",
-                validacion.campo,
-                validacion.documento_origen,
-                validacion.documento_comparado,
-                validacion.resultado,
-                validacion.valor_origen,
-                validacion.valor_comparado
-            )
+            logger.debug("===== VALIDACIONES RELACIONADAS CON EL DOCUMENTO =====")
+
+            for validacion in validaciones_documento:
+                if (
+                        validacion.documento_origen == tipo_documento
+                        or validacion.documento_comparado == tipo_documento
+                ):
+                    logger.debug(
+                        "CAMPO: %s | ORIGEN: %s | COMPARADO: %s | RESULTADO: %s | VALOR ORIGEN: %s | VALOR COMPARADO: %s",
+                        validacion.campo,
+                        validacion.documento_origen,
+                        validacion.documento_comparado,
+                        validacion.resultado,
+                        validacion.valor_origen,
+                        validacion.valor_comparado
+                    )
 
 
     procesar_inconsistencias_ia(

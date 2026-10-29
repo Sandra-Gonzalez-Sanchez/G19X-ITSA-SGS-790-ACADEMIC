@@ -163,7 +163,7 @@ const solicitarRecuperacion = async () => {
 
   setMensajeLogin('')
 
- console.log("🚨 SE EJECUTÓ iniciarSesion")
+
   try {
     const respuesta = await fetch(
       `${API_URL}/usuarios/login`,
@@ -194,8 +194,7 @@ const solicitarRecuperacion = async () => {
           await cargarEmpleados()
       }
 
-      console.log('Inicio de sesión correcto')
-      console.log('Rol:', datos.rol)
+
     } else {
       setMensajeLogin(datos.detail || 'Correo o contraseña incorrectos')
     }
@@ -221,12 +220,8 @@ const cargarPerfilEmpleado = async (token) => {
 
     if (respuesta.ok) {
       setEmpleado(datos)
-    } else {
-      console.error('Error al obtener el perfil:', datos.detail)
     }
-
   } catch (error) {
-    console.error('Error al consultar el perfil:', error)
   }
 }
 
@@ -289,7 +284,6 @@ const enviarSolicitudCorreccion = async () => {
 }
 
 const subirDocumento = async () => {
-    console.log('🚨 SE EJECUTÓ subirDocumento')
   if (!archivoSeleccionado || !tipoDocumentoSeleccionado) {
     setMensajeDocumento('Selecciona un archivo PDF.')
     return
@@ -414,7 +408,6 @@ const cargarDocumentos = async () => {
 
     if (respuesta.ok) {
       setDocumentos(datos)
-      console.log('Documentos cargados:', datos)
     } else {
       console.error('Error al cargar documentos:', datos.detail)
     }
@@ -425,9 +418,6 @@ const cargarDocumentos = async () => {
 }
 
 const verDocumento = async (documentoId) => {
-    console.log("🚨 VER DOCUMENTO EJECUTADO");
-console.log("ID:", documentoId);
-console.log("ROL:", localStorage.getItem('rol'));
   try {
     const token = localStorage.getItem('access_token')
 
@@ -558,7 +548,6 @@ const registrarEmpleado = async () => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-      console.log('Empleado registrado correctamente:', datos)
       setMensajeEmpleado('Empleado registrado correctamente.')
       setNuevoNombre('')
       setNuevoApellidoPaterno('')
@@ -601,7 +590,6 @@ const cargarEmpleados = async () => {
 
     if (respuesta.ok) {
       setEmpleados(datos)
-      console.log('Empleados cargados:', datos)
     } else {
       console.error('Error al cargar empleados:', datos.detail)
     }
@@ -834,7 +822,6 @@ const cargarExpediente = async (empleadoId) => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-      console.log('EXPEDIENTE RECIBIDO:', datos)
       setExpedienteSeleccionado(datos)
     } else {
       console.error('Error al cargar expediente:', datos.detail)
@@ -895,7 +882,6 @@ const cargarSolicitudes = async () => {
 
     if (respuesta.ok) {
       setSolicitudes(datos)
-      console.log('Solicitudes cargadas:', datos)
     } else {
       console.error('Error al cargar solicitudes:', datos.detail)
     }
@@ -926,8 +912,6 @@ const resolverSolicitud = async (solicitudId, accion) => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-      console.log('Solicitud resuelta:', datos)
-
       await cargarSolicitudes()
       await cargarEmpleados()
     } else {
@@ -957,8 +941,6 @@ const enviarInvitacion = async (empleadoId) => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-  console.log('Invitación enviada correctamente:', datos)
-
   alert('Invitación enviada correctamente.')
 } else {
   console.error('Error al enviar invitación:', datos.detail)
@@ -982,7 +964,6 @@ const validarInvitacion = async () => {
     if (respuesta.ok) {
       setInvitacionValida(true)
       setMensajeInvitacion('Invitación válida')
-      console.log('Invitación válida:', datos)
     } else {
       setInvitacionValida(false)
       setMensajeInvitacion(datos.detail)
@@ -1052,7 +1033,6 @@ const crearPasswordEmpleado = async () => {
     const datos = await respuesta.json()
 
     if (respuesta.ok) {
-      console.log('Cuenta creada correctamente:', datos)
       setMensajeInvitacion('Cuenta creada correctamente.')
       setCuentaCreada(true)
     } else {
@@ -1404,12 +1384,12 @@ if (esInvitacion) {
             />
 
             <div className="password-requisitos">
-              <p>{passwordMinimo ? '✅' : '❌'} Mínimo 8 caracteres</p>
-              <p>{passwordMayuscula ? '✅' : '❌'} Una letra mayúscula</p>
-              <p>{passwordMinuscula ? '✅' : '❌'} Una letra minúscula</p>
-              <p>{passwordNumero ? '✅' : '❌'} Un número</p>
-              <p>{passwordEspecial ? '✅' : '❌'} Un carácter especial (@ # $ % & !)</p>
-              <p>{passwordSinEspacios ? '✅' : '❌'} Sin espacios</p>
+              <p>{passwordMinimo ? 'Cumple' : 'Pendiente'} — Mínimo 8 caracteres</p>
+              <p>{passwordMayuscula ? 'Cumple' : 'Pendiente'} — Una letra mayúscula</p>
+              <p>{passwordMinuscula ? 'Cumple' : 'Pendiente'} — Una letra minúscula</p>
+              <p>{passwordNumero ? 'Cumple' : 'Pendiente'} — Un número</p>
+              <p>{passwordEspecial ? 'Cumple' : 'Pendiente'} — Un carácter especial (@ # $ % & !)</p>
+              <p>{passwordSinEspacios ? 'Cumple' : 'Pendiente'} — Sin espacios</p>
             </div>
           </div>
 
