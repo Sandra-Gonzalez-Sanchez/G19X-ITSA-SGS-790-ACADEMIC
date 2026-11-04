@@ -305,6 +305,97 @@ El frontend estará disponible en:
 http://localhost:5173
 ```
 
+## Primer uso
+
+Para utilizar el sistema por primera vez, es necesario crear un usuario de Recursos Humanos.
+
+### 1. Crear el primer usuario de RH
+
+Desde la carpeta principal del proyecto, ejecuta:
+
+```bash
+uvicorn app.main:app --reload --port 8001
+```
+
+Con el backend iniciado, abre en el navegador:
+
+`http://127.0.0.1:8001/docs`
+
+En la página de FastAPI, localiza el endpoint:
+
+`POST /usuarios/rh`
+
+Selecciona **Try it out** y envía un correo y una contraseña con el siguiente formato:
+
+```json
+{
+  "correo": "rh@ejemplo.com",
+  "password": "Clave#2026"
+}
+```
+
+Este endpoint únicamente permite crear el primer usuario de Recursos Humanos. Una vez que existe un usuario RH, los siguientes usuarios RH deben crearse desde el sistema mediante el acceso correspondiente.
+
+### 2. Reglas de la contraseña
+
+La contraseña debe cumplir con las siguientes condiciones:
+
+- Tener al menos 8 caracteres.
+- No contener espacios.
+- Contener al menos una letra mayúscula.
+- Contener al menos una letra minúscula.
+- Contener al menos un número.
+- Contener al menos un carácter especial de los siguientes: `@ # $ % & !`
+
+### 3. Configuración del correo
+
+Para enviar las invitaciones a los empleados es necesario configurar las variables de correo en el archivo `.env`:
+
+```text
+EMAIL_HOST
+EMAIL_PORT
+EMAIL_USER
+EMAIL_PASSWORD
+```
+
+Estas variables deben contener los datos de la cuenta de correo utilizada por el sistema. Si se utiliza Gmail, `EMAIL_PASSWORD` debe corresponder 
+a una contraseña de aplicación cuando la configuración de la cuenta lo requiera.
+
+Después de configurar el correo, RH puede registrar un empleado y utilizar la opción de envío de invitación. 
+El empleado recibirá un enlace para crear su contraseña, con una vigencia de 72 horas.
+
+### 4. Documentos para realizar una prueba
+
+Para probar el flujo completo de gestión documental, se requieren documentos en formato PDF correspondientes a los tipos solicitados por el sistema:
+
+- Acta de nacimiento.
+- CURP.
+- INE.
+- RFC o Constancia de Situación Fiscal.
+- Comprobante de domicilio.
+- Documento bancario para nómina.
+- Documento de Seguridad Social, cuando corresponda.
+
+Los documentos son procesados mediante OCR y posteriormente pasan por las validaciones correspondientes.
+
+
+## Pruebas
+
+El proyecto cuenta con pruebas automáticas para las reglas de validación documental.
+
+Las pruebas se encuentran en:
+
+`tests/test_validacion.py`
+
+Para ejecutarlas, desde la carpeta principal del proyecto y con el entorno virtual activo, utilizar:
+
+```bash
+python -m pytest
+```
+
+Las pruebas verifican el reconocimiento del tipo de documento y la validación de datos esenciales, incluyendo casos válidos y casos que deben
+ser rechazados.
+
 ## Ejecución de Ollama
 
 Para utilizar la validación mediante Inteligencia Artificial, Ollama debe estar disponible en el equipo y contar con el modelo:
