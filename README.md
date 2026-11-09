@@ -378,6 +378,22 @@ Para probar el flujo completo de gestión documental, se requieren documentos en
 
 Los documentos son procesados mediante OCR y posteriormente pasan por las validaciones correspondientes.
 
+### 5. Datos para realizar la prueba
+
+En la carpeta `docs/pdf_prueba/` se encuentran documentos PDF ficticios para realizar una prueba completa del sistema.
+
+Todos los documentos corresponden a la misma persona ficticia. Para que las validaciones y comparaciones coincidan,
+registrar al empleado con los siguientes datos:
+
+- **Nombre:** Valeria Sofía
+- **Apellido paterno:** Mendoza
+- **Apellido materno:** Torres
+- **Fecha de nacimiento:** 17/04/1998
+
+Después de registrar al empleado, RH debe enviar la invitación al correo de prueba utilizado para la evaluación.
+El empleado debe ingresar mediante el enlace recibido y cargar los documentos ubicados en `docs/pdf_prueba/`.
+
+Los documentos contienen datos ficticios y fueron creados exclusivamente para pruebas. No tienen validez oficial.
 
 ## Pruebas
 
@@ -393,8 +409,15 @@ Para ejecutarlas, desde la carpeta principal del proyecto y con el entorno virtu
 python -m pytest
 ```
 
-Las pruebas verifican el reconocimiento del tipo de documento y la validación de datos esenciales, incluyendo casos válidos y casos que deben
-ser rechazados.
+Antes de ejecutar las pruebas automáticas debe existir un archivo `.env` en la carpeta principal del proyecto.
+
+El archivo `.env` debe contener las variables necesarias para la conexión con PostgreSQL y la configuración del sistema. 
+Este archivo es necesario porque las pruebas importan módulos que utilizan la configuración de la base de datos.
+
+El archivo `.env` es privado y no debe subirse al repositorio. Para conocer las variables requeridas, consultar `.env.example`.
+
+Las pruebas verifican el reconocimiento del tipo de documento y la validación de datos esenciales, 
+incluyendo casos válidos y casos que deben ser rechazados.
 
 ## Ejecución de Ollama
 

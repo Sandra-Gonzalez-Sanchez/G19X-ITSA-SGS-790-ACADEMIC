@@ -77,7 +77,6 @@ def verificar_acceso_documento(
     datos_token: dict = Depends(verificar_token)
 ):
     rol = datos_token.get("rol")
-    logger.info("ROL QUE LLEGA AL DOCUMENTO: %s", rol)
 
     if rol not in ["EMPLEADO", "RH"]:
         raise HTTPException(

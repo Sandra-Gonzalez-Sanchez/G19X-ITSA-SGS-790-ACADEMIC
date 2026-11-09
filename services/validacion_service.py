@@ -728,8 +728,8 @@ def construir_mensaje_revision(
 
     if not resultado_ia["disponible"]:
         return (
-            "No fue posible completar la validación mediante "
-            "inteligencia artificial."
+            "La validación quedó pendiente porque la inteligencia "
+            "artificial no está disponible. Inténtalo más tarde."
         )
 
     return None
@@ -742,8 +742,6 @@ def procesar_documento(
     nombre_archivo,
     ruta_archivo,
 ):
-
-    logger.warning(">>> ENTRE A procesar_documento <<<")
 
     try:
         datos_ocr = ejecutar_ocr(ruta_archivo)
@@ -965,30 +963,25 @@ def procesar_documento(
     logger.debug("VALIDACIÓN DOCUMENTAL MEDIANTE IA:")
     logger.debug("%s", resultado_ia)
 
-    logger.info("===== VALIDACIONES RELACIONADAS CON EL DOCUMENTO =====")
 
-    for validacion in validaciones_documento:
-        if (
-                validacion.documento_origen == tipo_documento
-                or validacion.documento_comparado == tipo_documento
-        ):
-            logger.debug("===== VALIDACIONES RELACIONADAS CON EL DOCUMENTO =====")
+    if not resultado_ia["disponible"]:
+        documento.estado = "PENDIENTE"
 
-            for validacion in validaciones_documento:
-                if (
-                        validacion.documento_origen == tipo_documento
-                        or validacion.documento_comparado == tipo_documento
-                ):
-                    logger.debug(
-                        "CAMPO: %s | ORIGEN: %s | COMPARADO: %s | RESULTADO: %s | VALOR ORIGEN: %s | VALOR COMPARADO: %s",
-                        validacion.campo,
-                        validacion.documento_origen,
-                        validacion.documento_comparado,
-                        validacion.resultado,
-                        validacion.valor_origen,
-                        validacion.valor_comparado
-                    )
+        db.commit()
+        db.refresh(documento)
 
+        return {
+            "mensaje": (
+            "La validación quedó pendiente porque la inteligencia "
+            "artificial no está disponible. Inténtalo más tarde."
+            ),
+            "empleado_id": empleado.id,
+            "tipo_documento": tipo_documento,
+            "archivo": nombre_archivo,
+            "estado": documento.estado,
+            "motivo_revision": None,
+            "documento_aceptado": False
+        }
 
     procesar_inconsistencias_ia(
         db=db,
@@ -997,14 +990,18 @@ def procesar_documento(
         resultado_ia=resultado_ia
     )
 
-    if resultado_ia["requiere_revision"]:
+    if (
+            resultado_ia["disponible"]
+            and resultado_ia["requiere_revision"]
+    ):
         requiere_correccion = True
 
     if requiere_correccion:
         documento.estado = "SOLICITA CORRECCION"
+    elif not resultado_ia["disponible"]:
+        documento.estado = "PENDIENTE"
     else:
         documento.estado = "VALIDADO"
-        documento.motivo_revision = None
 
     db.commit()
     db.refresh(documento)

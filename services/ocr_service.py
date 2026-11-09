@@ -181,10 +181,7 @@ def extraer_clabe(textos):
 
 def extraer_nss(textos):
     patrones = [
-        r"\b\d{11}\b",
-        r"\b\d{3}-\d{2}-\d{4}\b",
-        r"\b\d{9}\b",
-        r"\bSS-[A-Z]{2}-\d{4}-\d{4}\b"
+        r"\b\d{11}\b"
     ]
 
     etiquetas = [
@@ -192,9 +189,6 @@ def extraer_nss(textos):
         "NUMERO DE SEGURIDAD SOCIAL",
         "NSS:",
         "NSS",
-        "SOCIAL SECURITY NUMBER",
-        "SSN:",
-        "SSN",
         "NÚMERO DE AFILIACIÓN",
         "NUMERO DE AFILIACION",
         "AFILIACIÓN",
